@@ -174,11 +174,11 @@ fn lexer(code: &str) -> Vec<Token> {
     tokens
 }
 
-fn convert_literal(token: &String) -> Token {
+fn convert_literal(token: &str) -> Token {
     if let Ok(num) = token.parse::<u64>() {
         Token::Number(num)
     } else {
-        Token::Text(token.clone())
+        Token::Text(token.to_string())
     }
 }
 
@@ -285,6 +285,8 @@ mod tests {
                 },
                 _ => unreachable!(),
             }
+        } else {
+            unreachable!();
         }
     }
 
@@ -299,6 +301,8 @@ mod tests {
                 },
                 _ => unreachable!(),
             }
+        } else {
+            unreachable!();
         }
     }
 
@@ -313,6 +317,8 @@ mod tests {
                 },
                 _ => unreachable!(),
             }
+        } else {
+            unreachable!();
         }
     }
 }

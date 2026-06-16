@@ -1,3 +1,5 @@
+use anyhow::Error;
+
 #[derive(Clone)]
 enum Expr {
     Expr(Box<Expr>),
@@ -18,23 +20,23 @@ impl Expr {
                         Ok(Value::Number(*num))
                     },
                     _ => {
-                        panic!("想定外のvalue-Expression")
+                        Err(Error::msg("Expr::ValueはValue::Number以外を想定していません。"))
                     },
                 }
             },
             Expr::Binary(bin) => {
-                Ok(bin.calc())
+                Ok(bin.calc()?)
             },
             Expr::Func(func) => {
                 match func {
                     BuiltinFunc::Print(expr) => {
-                        let r = expr.eval();
-                        let r = print(r.expect("printのexprに失敗"));
+                        let r = expr.eval()?;
+                        let r = print(r)?;
                         Ok(r)
                     },
                     BuiltinFunc::Println(expr) => {
-                        let r = expr.eval();
-                        let r = println(r.expect("printlnのexprに失敗"));
+                        let r = expr.eval()?;
+                        let r = println(r)?;
                         Ok(r)
                     },
                 }
@@ -65,9 +67,9 @@ impl Binary {
         }
     }
 
-    fn calc(&self) -> Value {
-        let lhs = self.lhs.eval().expect("calcでlhsの展開に失敗");
-        let rhs = self.rhs.eval().expect("calcでrhsの展開に失敗");
+    fn calc(&self) -> anyhow::Result<Value> {
+        let lhs = self.lhs.eval()?;
+        let rhs = self.rhs.eval()?;
 
         match &self.op {
             Op::Add => {
@@ -76,20 +78,20 @@ impl Binary {
         }
     }
 
-    fn add(lhs: Value, rhs: Value) -> Value {
+    fn add(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
         let lhs = if let Value::Number(num) = lhs {
             num
         } else {
-            panic!("想定外のvalue -lhs")
+            return Err(Error::msg("想定外のvalue add-lhs"));
         };
 
         let rhs = if let Value::Number(num) = rhs {
             num
         } else {
-            panic!("想定外のvalue -rhs")
+            return Err(Error::msg("想定外のvalue add-rhs"));
         };
 
-        Value::Number(lhs + rhs)
+        Ok(Value::Number(lhs + rhs))
     }
 }
 
@@ -105,7 +107,7 @@ enum Value {
     Boolean(bool),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 enum Token {
     Text(String),
     Number(u64),
@@ -115,23 +117,152 @@ enum Token {
     Semicolon,
 }
 
-fn print(value: Value) -> Value {
+struct Parser {
+    tokens: Vec<Token>,
+    pos: usize,
+}
+
+impl Parser {
+    fn parse_expr(&mut self) -> anyhow::Result<Expr> {
+        if let Some(token) = self.next() {
+            match token {
+                Token::Text(text) => {
+                    if !self.is_func(&text) {
+                        return Err(Error::msg("現在は関数名以外認めていません"));
+                    }
+                    if !self.consume(Token::LParen) {
+                        return Err(Error::msg("現在は関数名の次は(である必要があります。"));
+                    }
+
+                    let arg = match self.expr_add() {
+                        Ok(o) => {
+                            o
+                        },
+                        Err(e) => {
+                            return Err(e);
+                        },
+                    };
+
+                    Ok(Expr::Func(self.get_func(&text, arg)))
+                },
+                Token::Number(num) => {
+                    Ok(Expr::Value(Value::Number(num)))
+                },
+                _ => {
+                    Err(Error::msg("構文が想定外です。:parse_expr"))
+                },
+            }
+        } else {
+            Err(Error::msg("構文が想定外です。:parse_expr"))
+        }
+    }
+
+    fn is_func(&self, name: &str) -> bool {
+        match name {
+            "print" | "println" => {
+                true
+            },
+            _ => false
+        }
+    }
+
+    fn get_func(&self, name: &str, args: Expr) -> BuiltinFunc {
+        match name {
+            "print" => {
+                BuiltinFunc::Print(Box::new(args))
+            },
+            "println" => {
+                BuiltinFunc::Println(Box::new(args))
+            },
+            _ => {
+                panic!("{}", format!("存在しない関数名です。{}", name))
+            },
+        }
+    }
+
+    fn expr_add(&mut self) -> anyhow::Result<Expr> {
+        let mut left = self.expr_primary()?;
+
+        while self.consume(Token::Plus) {
+            let right = self.parse_expr()?;
+
+            let binary = Binary::new(
+                Box::new(left),
+                Box::new(right),
+                Op::Add
+            );
+            left = Expr::Binary(binary);
+        }
+
+        if !self.consume(Token::RParen) {
+            return Err(Error::msg("閉じ括弧がありません。"));
+        }
+
+        Ok(left)
+    }
+
+    fn expr_primary(&mut self) -> anyhow::Result<Expr> {
+        if let Some(token) = self.next() {
+            match token {
+                Token::Number(num) => {
+                    let num = Value::Number(num);
+                    Ok(Expr::Value(num))
+                },
+                _ => {
+                    Err(Error::msg("予期せぬ値です。expr_primary"))
+                },
+            }
+        } else {
+            Err(Error::msg("予期せぬ値です。expr_primary"))
+        }
+    }
+
+    fn next(&mut self) -> Option<Token> {
+        let token = self.tokens.get(self.pos).cloned();
+        if token.is_some() {
+            self.pos += 1;
+        }
+        token
+    }
+
+    fn peek(&self) -> Option<Token> {
+        self.tokens.get(self.pos).cloned()
+    }
+
+    fn consume(&mut self, expected: Token) -> bool {
+        if self.peek() == Some(expected) {
+            self.next();
+            true
+        } else {
+            false
+        }
+    }
+
+    fn new(tokens: Vec<Token>) -> Self {
+        Self {
+            tokens,
+            pos: 0,
+        }
+    }
+}
+
+fn print(value: Value) -> anyhow::Result<Value> {
     match value {
         Value::Number(num) => {
             print!("{}", num);
-            Value::Unit
+            Ok(Value::Unit)
         },
         _ => {
-            panic!("想定外のvalue-print")
+            Err(Error::msg("想定外のvalue-print"))
         },
     }
 }
 
-fn println(value: Value) -> Value {
-    print(value);
+fn println(value: Value) -> anyhow::Result<Value> {
+    print(value)?;
     println!();
 
-    Value::Unit
+    Ok(Value::Unit)
 }
 
 fn main() {
@@ -178,91 +309,10 @@ fn convert_literal(token: &str) -> Token {
     if let Ok(num) = token.parse::<u64>() {
         Token::Number(num)
     } else {
+        if token.is_empty() {
+            panic!("想定外の空文字が出現しました。")
+        }
         Token::Text(token.to_string())
-    }
-}
-
-fn parse(tokens: Vec<Token>) -> Expr {
-    let mut left= None;
-    let mut tokens = tokens.to_vec();
-
-    while let (token, mut tokens2) = tokens.split_first().expect("split_firstに失敗") {
-        match token {
-            Token::Text(text) => {
-                if !is_func(text) {
-                    panic!("現在は関数名以外認めていません")
-                }
-
-                let expr = parse(tokens2.to_vec());
-                let func = Expr::Func(parse_func(text, expr));
-                return func;
-            }
-            Token::Number(num) => {
-                left = Some(Expr::Value(Value::Number(*num)));
-            }
-            Token::Plus => {
-                let left2 = if let Some(expr) = left {
-                    expr
-                } else {
-                    panic!("+の前が存在しなかった")
-                };
-
-                let right = if let Some(num) = tokens2.get(0) {
-                    let num = if let Token::Number(num) = num {
-                        Value::Number(*num)
-                    } else {
-                        panic!("+の次が数字でなかった")
-                    };
-                    Expr::Value(num)
-                } else {
-                    panic!("+の次が数字でなかった2")
-                };
-
-                let bin = Binary::new(Box::new(left2), Box::new(right), Op::Add);
-                let expr = Expr::Binary(bin);
-
-                left = Some(expr);
-
-                tokens2 = &tokens2[1..];
-            }
-            _ => {
-            }
-        }
-
-        if tokens2.is_empty() {
-            break;
-        }
-
-        tokens = tokens2.to_vec();
-    }
-
-    if let Some(expr) = left {
-        expr
-    } else {
-        panic!("構文が想定外です。")
-    }
-}
-
-fn is_func(name: &str) -> bool {
-    match name {
-        "print" | "println" => {
-            true
-        },
-        _ => false
-    }
-}
-
-fn parse_func(name: &str, args: Expr) -> BuiltinFunc {
-    match name {
-        "print" => {
-            BuiltinFunc::Print(Box::new(args))
-        },
-        "println" => {
-            BuiltinFunc::Println(Box::new(args))
-        },
-        _ => {
-            panic!("{}", format!("存在しない関数名です。{}", name))
-        },
     }
 }
 
@@ -272,53 +322,65 @@ fn eval(expr: Expr) -> anyhow::Result<Value> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{eval, lexer, parse, Value};
+    use crate::{eval, lexer, Parser, Value};
 
     #[test]
     fn test1() {
         let tokens = lexer("println(12345);");
-        let expr = parse(tokens);
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
 
-        if let Ok(result) = eval(expr) {
-            match result {
-                Value::Unit => {
-                },
-                _ => unreachable!(),
-            }
-        } else {
-            unreachable!();
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => unreachable!(),
         }
     }
 
     #[test]
     fn test2() {
         let tokens = lexer("println(3 + 2);");
-        let expr = parse(tokens);
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
 
-        if let Ok(result) = eval(expr) {
-            match result {
-                Value::Unit => {
-                },
-                _ => unreachable!(),
-            }
-        } else {
-            unreachable!();
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => unreachable!(),
         }
     }
 
     #[test]
     fn test3() {
-        let tokens = lexer("print(1 + 2 + 5);");
-        let expr = parse(tokens);
+        let tokens = lexer("println(1 + 2 + 5);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
 
-        if let Ok(result) = eval(expr) {
-            match result {
-                Value::Unit => {
-                },
-                _ => unreachable!(),
-            }
-        } else {
-            unreachable!();
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => unreachable!(),
+        }
+    }
+
+    #[test]
+    fn test4() {
+        let tokens = lexer("println(3 + 12 + 7 + 10);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => unreachable!(),
         }
     }
 }

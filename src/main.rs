@@ -75,6 +75,9 @@ impl Binary {
             Op::Add => {
                 Binary::add(lhs, rhs)
             },
+            Op::Sub => {
+                Binary::sub(lhs, rhs)
+            },
         }
     }
 
@@ -93,27 +96,45 @@ impl Binary {
 
         Ok(Value::Number(lhs + rhs))
     }
+
+    fn sub(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Number(num) = lhs {
+            num
+        } else {
+            return Err(Error::msg("想定外のvalue add-lhs"));
+        };
+
+        let rhs = if let Value::Number(num) = rhs {
+            num
+        } else {
+            return Err(Error::msg("想定外のvalue add-rhs"));
+        };
+
+        Ok(Value::Number(lhs - rhs))
+    }
 }
 
 #[derive(Copy, Clone)]
 enum Op {
     Add,
+    Sub,
 }
 
 #[derive(Clone)]
 enum Value {
     Unit,
-    Number(u64),
+    Number(i64),
     Boolean(bool),
 }
 
 #[derive(Clone, Eq, PartialEq)]
 enum Token {
     Text(String),
-    Number(u64),
+    Number(i64),
     LParen,
     RParen,
     Plus,
+    Minus,
     Semicolon,
 }
 
@@ -183,19 +204,41 @@ impl Parser {
     fn expr_add(&mut self) -> anyhow::Result<Expr> {
         let mut left = self.expr_primary()?;
 
-        while self.consume(Token::Plus) {
-            let right = self.parse_expr()?;
+        loop {
+            if let Some(token) = self.peek() {
+                match token {
+                    Token::Plus => {
+                        self.next();
 
-            let binary = Binary::new(
-                Box::new(left),
-                Box::new(right),
-                Op::Add
-            );
-            left = Expr::Binary(binary);
-        }
+                        let right = self.expr_primary()?;
 
-        if !self.consume(Token::RParen) {
-            return Err(Error::msg("閉じ括弧がありません。"));
+                        let binary = Binary::new(
+                            Box::new(left),
+                            Box::new(right),
+                            Op::Add
+                        );
+                        left = Expr::Binary(binary);
+                    },
+                    Token::Minus => {
+                        self.next();
+
+                        let right = self.expr_primary()?;
+
+                        let binary = Binary::new(
+                            Box::new(left),
+                            Box::new(right),
+                            Op::Sub
+                        );
+                        left = Expr::Binary(binary);
+                    },
+                    _ => {
+                        if !self.consume(Token::RParen) {
+                            return Err(Error::msg("閉じ括弧がありません。"));
+                        }
+                        break;
+                    }
+                }
+            }
         }
 
         Ok(left)
@@ -289,16 +332,21 @@ fn lexer(code: &str) -> Vec<Token> {
                 tokens.push(convert_literal(&token));
                 tokens.push(Token::Plus);
                 token.clear();
-            }
+            },
+            '-' => {
+                tokens.push(convert_literal(&token));
+                tokens.push(Token::Minus);
+                token.clear();
+            },
             ';' => {
                 tokens.push(Token::Semicolon);
-            }
+            },
             ' ' => {
                 continue;
-            }
+            },
             _ => {
                 token.push(c);
-            }
+            },
         }
     }
 
@@ -306,7 +354,7 @@ fn lexer(code: &str) -> Vec<Token> {
 }
 
 fn convert_literal(token: &str) -> Token {
-    if let Ok(num) = token.parse::<u64>() {
+    if let Ok(num) = token.parse::<i64>() {
         Token::Number(num)
     } else {
         if token.is_empty() {
@@ -335,7 +383,9 @@ mod tests {
         match r {
             Value::Unit => {
             },
-            _ => unreachable!(),
+            _ => {
+                unreachable!()
+            },
         }
     }
 
@@ -350,7 +400,9 @@ mod tests {
         match r {
             Value::Unit => {
             },
-            _ => unreachable!(),
+            _ => {
+                unreachable!()
+            },
         }
     }
 
@@ -365,7 +417,9 @@ mod tests {
         match r {
             Value::Unit => {
             },
-            _ => unreachable!(),
+            _ => {
+                unreachable!()
+            },
         }
     }
 
@@ -380,7 +434,77 @@ mod tests {
         match r {
             Value::Unit => {
             },
-            _ => unreachable!(),
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test5() {
+        let tokens = lexer("println(10 - 7);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test6() {
+        let tokens = lexer("println(10 - 7 + 2);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test7() {
+        let tokens = lexer("println(10 - 7 + 2 - 4);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test8() {
+        let tokens = lexer("println(5 - 7 - 4);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
         }
     }
 }

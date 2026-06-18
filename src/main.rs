@@ -2,7 +2,7 @@ use anyhow::Error;
 
 #[derive(Clone)]
 enum Expr {
-    Expr(Box<Expr>),
+    // Expr(Box<Expr>),
     Value(Value),
     Func(BuiltinFunc),
     Binary(Binary),
@@ -11,9 +11,9 @@ enum Expr {
 impl Expr {
     fn eval(&self) -> anyhow::Result<Value> {
         match &self {
-            Expr::Expr(expr) => {
-                expr.eval()
-            },
+            // Expr::Expr(expr) => {
+            //     expr.eval()
+            // },
             Expr::Value(value) => {
                 match value {
                     Value::Number(num) => {
@@ -101,13 +101,13 @@ impl Binary {
         let lhs = if let Value::Number(num) = lhs {
             num
         } else {
-            return Err(Error::msg("想定外のvalue add-lhs"));
+            return Err(Error::msg("想定外のvalue sub-lhs"));
         };
 
         let rhs = if let Value::Number(num) = rhs {
             num
         } else {
-            return Err(Error::msg("想定外のvalue add-rhs"));
+            return Err(Error::msg("想定外のvalue sub-rhs"));
         };
 
         Ok(Value::Number(lhs - rhs))
@@ -124,7 +124,7 @@ enum Op {
 enum Value {
     Unit,
     Number(i64),
-    Boolean(bool),
+    // Boolean(bool),
 }
 
 #[derive(Clone, Eq, PartialEq)]
@@ -231,17 +231,18 @@ impl Parser {
                         );
                         left = Expr::Binary(binary);
                     },
+                    Token::RParen => {
+                        self.next();
+                        return Ok(left);
+                    },
                     _ => {
-                        if !self.consume(Token::RParen) {
-                            return Err(Error::msg("閉じ括弧がありません。"));
-                        }
                         break;
                     }
                 }
             }
         }
 
-        Ok(left)
+        Err(Error::msg("対応する')'が出現しませんでした。"))
     }
 
     fn expr_primary(&mut self) -> anyhow::Result<Expr> {
@@ -250,6 +251,9 @@ impl Parser {
                 Token::Number(num) => {
                     let num = Value::Number(num);
                     Ok(Expr::Value(num))
+                },
+                Token::LParen => {
+                    self.expr_add()
                 },
                 _ => {
                     Err(Error::msg("予期せぬ値です。expr_primary"))
@@ -309,34 +313,35 @@ fn println(value: Value) -> anyhow::Result<Value> {
 }
 
 fn main() {
-
+    let tokens = lexer("println(123);");
+    let mut parser = Parser::new(tokens);
+    if let Ok(expr) = parser.parse_expr() {
+        let _ = eval(expr);
+    }
 }
 
 fn lexer(code: &str) -> Vec<Token> {
     let mut token = String::new();
     let mut tokens = Vec::new();
+    let mut chars = code.chars().peekable();
 
-    for c in code.chars() {
+    while let Some(c) = chars.next() {
         match c {
             '(' => {
-                tokens.push(convert_literal(&token));
+                push_literal(&mut tokens, &mut token);
                 tokens.push(Token::LParen);
-                token.clear();
             },
             ')' => {
-                tokens.push(convert_literal(&token));
+                push_literal(&mut tokens, &mut token);
                 tokens.push(Token::RParen);
-                token.clear();
             },
             '+' => {
-                tokens.push(convert_literal(&token));
+                push_literal(&mut tokens, &mut token);
                 tokens.push(Token::Plus);
-                token.clear();
             },
             '-' => {
-                tokens.push(convert_literal(&token));
+                push_literal(&mut tokens, &mut token);
                 tokens.push(Token::Minus);
-                token.clear();
             },
             ';' => {
                 tokens.push(Token::Semicolon);
@@ -364,6 +369,13 @@ fn convert_literal(token: &str) -> Token {
     }
 }
 
+fn push_literal(tokens: &mut Vec<Token>, token: &mut String) {
+    if !token.is_empty() {
+        tokens.push(convert_literal(&token));
+        token.clear();
+    }
+}
+
 fn eval(expr: Expr) -> anyhow::Result<Value> {
     expr.eval()
 }
@@ -373,7 +385,9 @@ mod tests {
     use crate::{eval, lexer, Parser, Value};
 
     #[test]
-    fn test1() {
+    fn test01() {
+        print!("test1 [println(12345)] = ");
+
         let tokens = lexer("println(12345);");
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
@@ -390,7 +404,9 @@ mod tests {
     }
 
     #[test]
-    fn test2() {
+    fn test02() {
+        print!("test2 [println(3 + 2)] = ");
+
         let tokens = lexer("println(3 + 2);");
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
@@ -407,7 +423,9 @@ mod tests {
     }
 
     #[test]
-    fn test3() {
+    fn test03() {
+        print!("test3 [println(1 + 2 + 5)] = ");
+
         let tokens = lexer("println(1 + 2 + 5);");
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
@@ -424,7 +442,9 @@ mod tests {
     }
 
     #[test]
-    fn test4() {
+    fn test04() {
+        print!("test4 [println(3 + 12 + 7 + 10)] = ");
+
         let tokens = lexer("println(3 + 12 + 7 + 10);");
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
@@ -441,7 +461,9 @@ mod tests {
     }
 
     #[test]
-    fn test5() {
+    fn test05() {
+        print!("test5 [println(10 - 7)] = ");
+
         let tokens = lexer("println(10 - 7);");
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
@@ -458,7 +480,9 @@ mod tests {
     }
 
     #[test]
-    fn test6() {
+    fn test06() {
+        print!("test6 [println(10 - 7 + 2)] = ");
+
         let tokens = lexer("println(10 - 7 + 2);");
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
@@ -475,7 +499,9 @@ mod tests {
     }
 
     #[test]
-    fn test7() {
+    fn test07() {
+        print!("test7 [println(10 - 7 + 2 - 4)] = ");
+
         let tokens = lexer("println(10 - 7 + 2 - 4);");
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
@@ -492,8 +518,143 @@ mod tests {
     }
 
     #[test]
-    fn test8() {
+    fn test08() {
+        print!("test8 [println(5 - 7 - 4)] = ");
+
         let tokens = lexer("println(5 - 7 - 4);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test09() {
+        print!("test9 [println((1 + 2) + 3)] = ");
+
+        let tokens = lexer("println((1 + 2) + 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test10() {
+        print!("test10 [println(10 - (3 + 2))] = ");
+
+        let tokens = lexer("println(10 - (3 + 2));");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test11() {
+        print!("test11 [println((10 - 3) - 2)] = ");
+
+        let tokens = lexer("println((10 - 3) - 2);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test12() {
+        print!("test12 [println(5 + (10 - 3) - 2)] = ");
+
+        let tokens = lexer("println(5 + (10 - 3) - 2);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test13() {
+        print!("test13 [println(((1 + 2) - (3 + 4)) + 5)] = ");
+
+        let tokens = lexer("println(((1 + 2) - (3 + 4)) + 5);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test14() {
+        print!("test14 [println((1 + 2 - 3 + 4) + 5)] = ");
+
+        let tokens = lexer("println((1 + 2 - 3 + 4) + 5);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test15() {
+        print!("test15 [println(1 + (2 - 3 + 4 + 5))] = ");
+
+        let tokens = lexer("println(1 + (2 - 3 + 4 + 5));");
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
 

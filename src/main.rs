@@ -164,6 +164,14 @@ impl Parser {
                         },
                     };
 
+                    if !self.consume(Token::RParen) {
+                        return Err(Error::msg("関数名が)で閉じられていません。"));
+                    }
+
+                    if !self.consume(Token::Semicolon) {
+                        return Err(Error::msg("現在は関数のみが先頭の式として認められているので;が必要です。"));
+                    }
+
                     Ok(Expr::Func(self.get_func(&text, arg)))
                 },
                 Token::Number(num) => {
@@ -204,45 +212,39 @@ impl Parser {
     fn expr_add(&mut self) -> anyhow::Result<Expr> {
         let mut left = self.expr_primary()?;
 
-        loop {
-            if let Some(token) = self.peek() {
-                match token {
-                    Token::Plus => {
-                        self.next();
+        while let Some(token) = self.peek() {
+            match token {
+                Token::Plus => {
+                    self.next();
 
-                        let right = self.expr_primary()?;
+                    let right = self.expr_primary()?;
 
-                        let binary = Binary::new(
-                            Box::new(left),
-                            Box::new(right),
-                            Op::Add
-                        );
-                        left = Expr::Binary(binary);
-                    },
-                    Token::Minus => {
-                        self.next();
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::Add
+                    );
+                    left = Expr::Binary(binary);
+                },
+                Token::Minus => {
+                    self.next();
 
-                        let right = self.expr_primary()?;
+                    let right = self.expr_primary()?;
 
-                        let binary = Binary::new(
-                            Box::new(left),
-                            Box::new(right),
-                            Op::Sub
-                        );
-                        left = Expr::Binary(binary);
-                    },
-                    Token::RParen => {
-                        self.next();
-                        return Ok(left);
-                    },
-                    _ => {
-                        break;
-                    }
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::Sub
+                    );
+                    left = Expr::Binary(binary);
+                },
+                _ => {
+                    break;
                 }
             }
         }
 
-        Err(Error::msg("対応する')'が出現しませんでした。"))
+        Ok(left)
     }
 
     fn expr_primary(&mut self) -> anyhow::Result<Expr> {
@@ -253,7 +255,11 @@ impl Parser {
                     Ok(Expr::Value(num))
                 },
                 Token::LParen => {
-                    self.expr_add()
+                    let expr = self.expr_add()?;
+                    if !self.consume(Token::RParen) {
+                        return Err(Error::msg("対応する)が見つかりませんでした。"));
+                    }
+                    Ok(expr)
                 },
                 _ => {
                     Err(Error::msg("予期せぬ値です。expr_primary"))
@@ -344,16 +350,19 @@ fn lexer(code: &str) -> Vec<Token> {
                 tokens.push(Token::Minus);
             },
             ';' => {
+                push_literal(&mut tokens, &mut token);
                 tokens.push(Token::Semicolon);
             },
-            ' ' => {
-                continue;
+            c if c.is_whitespace() => {
+                push_literal(&mut tokens, &mut token);
             },
             _ => {
                 token.push(c);
             },
         }
     }
+
+    push_literal(&mut tokens, &mut token);
 
     tokens
 }
@@ -386,7 +395,7 @@ mod tests {
 
     #[test]
     fn test01() {
-        print!("test1 [println(12345)] = ");
+        print!("test1 [println(12345);] = ");
 
         let tokens = lexer("println(12345);");
         let mut parser = Parser::new(tokens);
@@ -405,7 +414,7 @@ mod tests {
 
     #[test]
     fn test02() {
-        print!("test2 [println(3 + 2)] = ");
+        print!("test2 [println(3 + 2);] = ");
 
         let tokens = lexer("println(3 + 2);");
         let mut parser = Parser::new(tokens);
@@ -424,7 +433,7 @@ mod tests {
 
     #[test]
     fn test03() {
-        print!("test3 [println(1 + 2 + 5)] = ");
+        print!("test3 [println(1 + 2 + 5);] = ");
 
         let tokens = lexer("println(1 + 2 + 5);");
         let mut parser = Parser::new(tokens);
@@ -443,7 +452,7 @@ mod tests {
 
     #[test]
     fn test04() {
-        print!("test4 [println(3 + 12 + 7 + 10)] = ");
+        print!("test4 [println(3 + 12 + 7 + 10);] = ");
 
         let tokens = lexer("println(3 + 12 + 7 + 10);");
         let mut parser = Parser::new(tokens);
@@ -462,7 +471,7 @@ mod tests {
 
     #[test]
     fn test05() {
-        print!("test5 [println(10 - 7)] = ");
+        print!("test5 [println(10 - 7);] = ");
 
         let tokens = lexer("println(10 - 7);");
         let mut parser = Parser::new(tokens);
@@ -481,7 +490,7 @@ mod tests {
 
     #[test]
     fn test06() {
-        print!("test6 [println(10 - 7 + 2)] = ");
+        print!("test6 [println(10 - 7 + 2);] = ");
 
         let tokens = lexer("println(10 - 7 + 2);");
         let mut parser = Parser::new(tokens);
@@ -500,7 +509,7 @@ mod tests {
 
     #[test]
     fn test07() {
-        print!("test7 [println(10 - 7 + 2 - 4)] = ");
+        print!("test7 [println(10 - 7 + 2 - 4);] = ");
 
         let tokens = lexer("println(10 - 7 + 2 - 4);");
         let mut parser = Parser::new(tokens);
@@ -519,7 +528,7 @@ mod tests {
 
     #[test]
     fn test08() {
-        print!("test8 [println(5 - 7 - 4)] = ");
+        print!("test8 [println(5 - 7 - 4);] = ");
 
         let tokens = lexer("println(5 - 7 - 4);");
         let mut parser = Parser::new(tokens);
@@ -538,7 +547,7 @@ mod tests {
 
     #[test]
     fn test09() {
-        print!("test9 [println((1 + 2) + 3)] = ");
+        print!("test9 [println((1 + 2) + 3);] = ");
 
         let tokens = lexer("println((1 + 2) + 3);");
         let mut parser = Parser::new(tokens);
@@ -557,7 +566,7 @@ mod tests {
 
     #[test]
     fn test10() {
-        print!("test10 [println(10 - (3 + 2))] = ");
+        print!("test10 [println(10 - (3 + 2));] = ");
 
         let tokens = lexer("println(10 - (3 + 2));");
         let mut parser = Parser::new(tokens);
@@ -576,7 +585,7 @@ mod tests {
 
     #[test]
     fn test11() {
-        print!("test11 [println((10 - 3) - 2)] = ");
+        print!("test11 [println((10 - 3) - 2);] = ");
 
         let tokens = lexer("println((10 - 3) - 2);");
         let mut parser = Parser::new(tokens);
@@ -595,7 +604,7 @@ mod tests {
 
     #[test]
     fn test12() {
-        print!("test12 [println(5 + (10 - 3) - 2)] = ");
+        print!("test12 [println(5 + (10 - 3) - 2);] = ");
 
         let tokens = lexer("println(5 + (10 - 3) - 2);");
         let mut parser = Parser::new(tokens);
@@ -614,7 +623,7 @@ mod tests {
 
     #[test]
     fn test13() {
-        print!("test13 [println(((1 + 2) - (3 + 4)) + 5)] = ");
+        print!("test13 [println(((1 + 2) - (3 + 4)) + 5);] = ");
 
         let tokens = lexer("println(((1 + 2) - (3 + 4)) + 5);");
         let mut parser = Parser::new(tokens);
@@ -633,7 +642,7 @@ mod tests {
 
     #[test]
     fn test14() {
-        print!("test14 [println((1 + 2 - 3 + 4) + 5)] = ");
+        print!("test14 [println((1 + 2 - 3 + 4) + 5);] = ");
 
         let tokens = lexer("println((1 + 2 - 3 + 4) + 5);");
         let mut parser = Parser::new(tokens);
@@ -652,9 +661,138 @@ mod tests {
 
     #[test]
     fn test15() {
-        print!("test15 [println(1 + (2 - 3 + 4 + 5))] = ");
+        print!("test15 [println(1 + (2 - 3 + 4 + 5));] = ");
 
         let tokens = lexer("println(1 + (2 - 3 + 4 + 5));");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test16_err() {
+        print!("test16 [println((1 + 2 + 3);] = ");
+
+        let tokens = lexer("println((1 + 2 + 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr();
+
+        let mut msg = String::new();
+
+        match expr {
+            Ok(_) => {
+            },
+            Err(e) => {
+                msg = e.to_string();
+                assert_eq!("関数名が)で閉じられていません。", msg);
+            },
+        }
+
+        println!("{}", msg);
+    }
+
+    #[test]
+    fn test17_err() {
+        print!("test17 [println(1 + (2 + 3);] = ");
+
+        let tokens = lexer("println(1 + (2 + 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr();
+
+        let mut msg = String::new();
+
+        match expr {
+            Ok(_) => {
+            },
+            Err(e) => {
+                msg = e.to_string();
+                assert_eq!("関数名が)で閉じられていません。", msg);
+            },
+        }
+
+        println!("{}", msg);
+    }
+
+    #[test]
+    fn test18_err() {
+        print!("test18 [println(1 + 2));] = ");
+
+        let tokens = lexer("println(1 + 2));");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr();
+
+        let mut msg = String::new();
+
+        match expr {
+            Ok(_) => {
+            },
+            Err(e) => {
+                msg = e.to_string();
+                assert_eq!("現在は関数のみが先頭の式として認められているので;が必要です。", msg);
+            },
+        }
+
+        println!("{}", msg);
+    }
+
+    #[test]
+    fn test19_err() {
+        print!("test19 [println((1 + 2)));] = ");
+
+        let tokens = lexer("println((1 + 2)));");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr();
+
+        let mut msg = String::new();
+
+        match expr {
+            Ok(_) => {
+            },
+            Err(e) => {
+                msg = e.to_string();
+                assert_eq!("現在は関数のみが先頭の式として認められているので;が必要です。", msg);
+            },
+        }
+
+        println!("{}", msg);
+    }
+
+    #[test]
+    fn test20_err() {
+        print!("test20 [println(1 + 2 + 3)] = ");
+
+        let tokens = lexer("println(1 + 2 + 3)");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr();
+
+        let mut msg = String::new();
+
+        match expr {
+            Ok(_) => {
+            },
+            Err(e) => {
+                msg = e.to_string();
+                assert_eq!("現在は関数のみが先頭の式として認められているので;が必要です。", msg);
+            },
+        }
+
+        println!("{}", msg);
+    }
+
+    #[test]
+    fn test21_err() {
+        print!("test21 [println(5 - 7 - 4);] = ");
+
+        let tokens = lexer("println(5 - 7 - 4);");
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
 

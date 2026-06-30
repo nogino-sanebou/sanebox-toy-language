@@ -127,7 +127,7 @@ enum Value {
     // Boolean(bool),
 }
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 enum Token {
     Text(String),
     Number(i64),
@@ -145,12 +145,14 @@ struct Parser {
 
 impl Parser {
     fn parse_expr(&mut self) -> anyhow::Result<Expr> {
-        if let Some(token) = self.next() {
+        if let Some(token) = self.peek() {
             match token {
+                // テキストは関数として処理をする
                 Token::Text(text) => {
                     if !self.is_func(&text) {
                         return Err(Error::msg("現在は関数名以外認めていません"));
                     }
+                    self.next();
                     if !self.consume(Token::LParen) {
                         return Err(Error::msg("現在は関数名の次は(である必要があります。"));
                     }
@@ -174,8 +176,9 @@ impl Parser {
 
                     Ok(Expr::Func(self.get_func(&text, arg)))
                 },
-                Token::Number(num) => {
-                    Ok(Expr::Value(Value::Number(num)))
+                // 数値、開始括弧が来たら式文として処理をする
+                Token::Number(_) | Token::LParen => {
+                    Ok(self.expr_stmt()?)
                 },
                 _ => {
                     Err(Error::msg("構文が想定外です。:parse_expr"))
@@ -209,6 +212,7 @@ impl Parser {
         }
     }
 
+    // 加算・減算処理
     fn expr_add(&mut self) -> anyhow::Result<Expr> {
         let mut left = self.expr_primary()?;
 
@@ -247,6 +251,7 @@ impl Parser {
         Ok(left)
     }
 
+    // リテラル処理
     fn expr_primary(&mut self) -> anyhow::Result<Expr> {
         if let Some(token) = self.next() {
             match token {
@@ -262,12 +267,23 @@ impl Parser {
                     Ok(expr)
                 },
                 _ => {
-                    Err(Error::msg("予期せぬ値です。expr_primary"))
+                    Err(Error::msg(format!("予期せぬ値です。expr_primary = {:?}", token)))
                 },
             }
         } else {
             Err(Error::msg("予期せぬ値です。expr_primary"))
         }
+    }
+
+    // 式文処理
+    fn expr_stmt(&mut self) -> anyhow::Result<Expr> {
+        let res = self.expr_add();
+
+        if !self.consume(Token::Semicolon) {
+            return Err(Error::msg("式文の末尾がセミコロンでありません。"));
+        }
+
+        res
     }
 
     fn next(&mut self) -> Option<Token> {
@@ -686,10 +702,11 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr();
 
-        let mut msg = String::new();
+        let msg ;
 
         match expr {
             Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
                 msg = e.to_string();
@@ -708,10 +725,11 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr();
 
-        let mut msg = String::new();
+        let msg;
 
         match expr {
             Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
                 msg = e.to_string();
@@ -730,10 +748,11 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr();
 
-        let mut msg = String::new();
+        let msg;
 
         match expr {
             Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
                 msg = e.to_string();
@@ -752,10 +771,11 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr();
 
-        let mut msg = String::new();
+        let msg;
 
         match expr {
             Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
                 msg = e.to_string();
@@ -774,10 +794,11 @@ mod tests {
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr();
 
-        let mut msg = String::new();
+        let msg;
 
         match expr {
             Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
                 msg = e.to_string();
@@ -789,21 +810,172 @@ mod tests {
     }
 
     #[test]
-    fn test21_err() {
-        print!("test21 [println(5 - 7 - 4);] = ");
+    fn test21() {
+        print!("test21 [1 + 3;] = ");
 
-        let tokens = lexer("println(5 - 7 - 4);");
+        let tokens = lexer("1 + 3;");
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
 
         let r = eval(expr).unwrap();
 
         match r {
-            Value::Unit => {
+            Value::Number(num) => {
+                assert_eq!(4, num);
+                println!("{}", num);
             },
             _ => {
                 unreachable!()
             },
         }
+    }
+
+    #[test]
+    fn test22() {
+        print!("test22 [3 - 1;] = ");
+
+        let tokens = lexer("3 - 1;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(2, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test23() {
+        print!("test23 [3 + 4 - 5;] = ");
+
+        let tokens = lexer("3 + 4 - 5;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(2, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test24() {
+        print!("test24 [(3 + 2) - (7 + 3);] = ");
+
+        let tokens = lexer("(3 + 2) - (7 + 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(-5, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test25() {
+        print!("test25 [((3 + 2) - (7 + 3)) + 20;] = ");
+
+        let tokens = lexer("((3 + 2) - (7 + 3)) + 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(15, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test26() {
+        print!("test26 [200 + ((100 - 20) + (15 + 20));] = ");
+
+        let tokens = lexer("200 + ((100 - 20) + (15 + 20));");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(315, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test27() {
+        print!("test27 [((10 + 20) - (30 + 70) - (200 - 150));] = ");
+
+        let tokens = lexer("((10 + 20) - (30 + 70) - (200 - 150));");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(-120, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test28_err() {
+        print!("test28 [1 + 2 - 3] = ");
+
+        let tokens = lexer("1 + 2 - 3");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr();
+
+        let msg;
+
+        match expr {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                msg = e.to_string();
+                assert_eq!("式文の末尾がセミコロンでありません。", msg);
+            },
+        }
+
+        println!("{}", msg);
     }
 }

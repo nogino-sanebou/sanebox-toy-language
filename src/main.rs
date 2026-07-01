@@ -6,6 +6,7 @@ enum Expr {
     Value(Value),
     Func(BuiltinFunc),
     Binary(Binary),
+    Unary(Unary),
 }
 
 impl Expr {
@@ -40,6 +41,9 @@ impl Expr {
                         Ok(r)
                     },
                 }
+            },
+            Expr::Unary(unary) => {
+                Ok(unary.calc()?)
             },
         }
     }
@@ -164,6 +168,43 @@ enum Op {
     Div,
 }
 
+#[derive(Copy, Clone)]
+enum UnaryOp {
+    Neg,
+}
+
+#[derive(Clone)]
+struct Unary {
+    expr: Box<Expr>,
+    op: UnaryOp,
+}
+
+impl Unary {
+    fn new(expr: Box<Expr>, op: UnaryOp) -> Self {
+        Self {
+            expr,
+            op,
+        }
+    }
+
+    fn calc(&self) -> anyhow::Result<Value> {
+        let value = self.expr.eval()?;
+
+        match self.op {
+            UnaryOp::Neg => {
+                match value {
+                    Value::Number(num) => {
+                        Ok(Value::Number(-num))
+                    },
+                    _ => {
+                        Err(Error::msg("数値以外が出現しました。 Unary.calc"))
+                    },
+                }
+            }
+        }
+    }
+}
+
 #[derive(Clone)]
 enum Value {
     Unit,
@@ -222,8 +263,8 @@ impl Parser {
 
                     Ok(Expr::Func(self.get_func(&text, arg)))
                 },
-                // 数値、開始括弧が来たら式文として処理をする
-                Token::Number(_) | Token::LParen => {
+                // 数値、開始括弧、単項マイナスが来たら式文として処理をする
+                Token::Number(_) | Token::LParen | Token::Minus => {
                     Ok(self.expr_stmt()?)
                 },
                 _ => {
@@ -299,14 +340,14 @@ impl Parser {
 
     // 乗算・除算処理
     fn expr_mul(&mut self) -> anyhow::Result<Expr> {
-        let mut left = self.expr_primary()?;
+        let mut left = self.expr_unary()?;
 
         while let Some(token) = self.peek() {
             match token {
                 Token::Asterisk => {
                     self.next();
 
-                    let right = self.expr_primary()?;
+                    let right = self.expr_unary()?;
 
                     let binary = Binary::new(
                         Box::new(left),
@@ -318,7 +359,7 @@ impl Parser {
                 Token::Slash => {
                     self.next();
 
-                    let right = self.expr_primary()?;
+                    let right = self.expr_unary()?;
 
                     let binary = Binary::new(
                         Box::new(left),
@@ -334,6 +375,28 @@ impl Parser {
         }
 
         Ok(left)
+    }
+
+    // 単項式(-)の処理
+    fn expr_unary(&mut self) -> anyhow::Result<Expr> {
+        if let Some(token) = self.peek() {
+            match token {
+                Token::Minus => {
+                    self.next();
+
+                    let expr = self.expr_unary()?;
+
+                    let unary = Unary::new(Box::new(expr), UnaryOp::Neg);
+
+                    Ok(Expr::Unary(unary))
+                },
+                _ => {
+                    self.expr_primary()
+                },
+            }
+        } else {
+            Err(Error::msg("トークンが見つかりませんでした。expr_unary"))
+        }
     }
 
     // リテラル処理
@@ -1367,5 +1430,276 @@ mod tests {
         }
 
         println!("{}", msg);
+    }
+
+    #[test]
+    fn test43() {
+        print!("test43 [-10 + 15;] = ");
+
+        let tokens = lexer("-10 + 15;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(5, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test44() {
+        print!("test44 [6 + -2;] = ");
+
+        let tokens = lexer("6 + -2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(4, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test45() {
+        print!("test45 [6 - -2;] = ");
+
+        let tokens = lexer("6 - -2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(8, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test46() {
+        print!("test46 [-102;] = ");
+
+        let tokens = lexer("-102;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(-102, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test47() {
+        print!("test47 [-(1 + 3);] = ");
+
+        let tokens = lexer("-(1 + 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(-4, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test48() {
+        print!("test48 [10 * -3;] = ");
+
+        let tokens = lexer("10 * -3;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(-30, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test49() {
+        print!("test49 [-10 * 4;] = ");
+
+        let tokens = lexer("-10 * 4;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(-40, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test50() {
+        print!("test50 [10 / -2;] = ");
+
+        let tokens = lexer("10 / -2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(-5, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test51() {
+        print!("test51 [-10 / 2;] = ");
+
+        let tokens = lexer("-10 / 2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(-5, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test52() {
+        print!("test52 [-(2 * 3);] = ");
+
+        let tokens = lexer("-(2 * 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(-6, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test53() {
+        print!("test53 [(-1 + 6) * (2 -- 3) + -(10 / 2);] = ");
+
+        let tokens = lexer("(-1 + 6) * (2 -- 3) + -(10 / 2);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(20, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test54() {
+        print!("test54 [println(-20 + 5);] = ");
+
+        let tokens = lexer("println(-20 + 5);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test55() {
+        print!("test55 [10 - - -1;] = ");
+
+        let tokens = lexer("10 - - -1;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(9, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
     }
 }

@@ -78,6 +78,12 @@ impl Binary {
             Op::Sub => {
                 Binary::sub(lhs, rhs)
             },
+            Op::Mul => {
+                Binary::mul(lhs, rhs)
+            },
+            Op::Div => {
+                Binary::div(lhs, rhs)
+            },
         }
     }
 
@@ -112,12 +118,50 @@ impl Binary {
 
         Ok(Value::Number(lhs - rhs))
     }
+
+    fn mul(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Number(num) = lhs {
+            num
+        } else {
+            return Err(Error::msg("想定外のvalue mul-lhs"));
+        };
+
+        let rhs = if let Value::Number(num) = rhs {
+            num
+        } else {
+            return Err(Error::msg("想定外のvalue mul-rhs"));
+        };
+
+        Ok(Value::Number(lhs * rhs))
+    }
+
+    fn div(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Number(num) = lhs {
+            num
+        } else {
+            return Err(Error::msg("想定外のvalue div-lhs"));
+        };
+
+        let rhs = if let Value::Number(num) = rhs {
+            num
+        } else {
+            return Err(Error::msg("想定外のvalue div-rhs"));
+        };
+
+        if rhs == 0 {
+            return Err(Error::msg("0で除算できません。"));
+        }
+
+        Ok(Value::Number(lhs / rhs))
+    }
 }
 
 #[derive(Copy, Clone)]
 enum Op {
     Add,
     Sub,
+    Mul,
+    Div,
 }
 
 #[derive(Clone)]
@@ -135,6 +179,8 @@ enum Token {
     RParen,
     Plus,
     Minus,
+    Asterisk,
+    Slash,
     Semicolon,
 }
 
@@ -214,14 +260,14 @@ impl Parser {
 
     // 加算・減算処理
     fn expr_add(&mut self) -> anyhow::Result<Expr> {
-        let mut left = self.expr_primary()?;
+        let mut left = self.expr_mul()?;
 
         while let Some(token) = self.peek() {
             match token {
                 Token::Plus => {
                     self.next();
 
-                    let right = self.expr_primary()?;
+                    let right = self.expr_mul()?;
 
                     let binary = Binary::new(
                         Box::new(left),
@@ -233,12 +279,51 @@ impl Parser {
                 Token::Minus => {
                     self.next();
 
-                    let right = self.expr_primary()?;
+                    let right = self.expr_mul()?;
 
                     let binary = Binary::new(
                         Box::new(left),
                         Box::new(right),
                         Op::Sub
+                    );
+                    left = Expr::Binary(binary);
+                },
+                _ => {
+                    break;
+                }
+            }
+        }
+
+        Ok(left)
+    }
+
+    // 乗算・除算処理
+    fn expr_mul(&mut self) -> anyhow::Result<Expr> {
+        let mut left = self.expr_primary()?;
+
+        while let Some(token) = self.peek() {
+            match token {
+                Token::Asterisk => {
+                    self.next();
+
+                    let right = self.expr_primary()?;
+
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::Mul
+                    );
+                    left = Expr::Binary(binary);
+                },
+                Token::Slash => {
+                    self.next();
+
+                    let right = self.expr_primary()?;
+
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::Div
                     );
                     left = Expr::Binary(binary);
                 },
@@ -277,13 +362,13 @@ impl Parser {
 
     // 式文処理
     fn expr_stmt(&mut self) -> anyhow::Result<Expr> {
-        let res = self.expr_add();
+        let res = self.expr_add()?;
 
         if !self.consume(Token::Semicolon) {
             return Err(Error::msg("式文の末尾がセミコロンでありません。"));
         }
 
-        res
+        Ok(res)
     }
 
     fn next(&mut self) -> Option<Token> {
@@ -364,6 +449,14 @@ fn lexer(code: &str) -> Vec<Token> {
             '-' => {
                 push_literal(&mut tokens, &mut token);
                 tokens.push(Token::Minus);
+            },
+            '*' => {
+                push_literal(&mut tokens, &mut token);
+                tokens.push(Token::Asterisk);
+            },
+            '/' => {
+                push_literal(&mut tokens, &mut token);
+                tokens.push(Token::Slash);
             },
             ';' => {
                 push_literal(&mut tokens, &mut token);
@@ -973,6 +1066,303 @@ mod tests {
             Err(e) => {
                 msg = e.to_string();
                 assert_eq!("式文の末尾がセミコロンでありません。", msg);
+            },
+        }
+
+        println!("{}", msg);
+    }
+
+    #[test]
+    fn test29() {
+        print!("test29 [3 * 3;] = ");
+
+        let tokens = lexer("3 * 3;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(9, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test30() {
+        print!("test30 [120 / 4;] = ");
+
+        let tokens = lexer("120 / 4;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(30, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test31() {
+        print!("test31 [10 * 20 / 2;] = ");
+
+        let tokens = lexer("10 * 20 / 2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(100, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test32() {
+        print!("test32 [3 + 5 * 5;] = ");
+
+        let tokens = lexer("3 + 5 * 5;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(28, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test33() {
+        print!("test33 [3 + 5 * 5 + 10 / 5;] = ");
+
+        let tokens = lexer("3 + 5 * 5 + 10 / 5;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(30, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test34() {
+        print!("test34 [(10 + 1) * (3 + 8);] = ");
+
+        let tokens = lexer("(10 + 1) * (3 + 8);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(121, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test35() {
+        print!("test35 [print(12 * 20);] = ");
+
+        let tokens = lexer("print(12 * 10);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+                println!();
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test36() {
+        print!("test36 [println((5 - 10) / (1 + 1));] = ");
+
+        let tokens = lexer("println((5 - 10) / (1 + 1));");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test37_err() {
+        print!("test37 [10 / 0;] = ");
+
+        let tokens = lexer("10 / 0;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr();
+
+        let eval = eval(expr.unwrap());
+
+        let msg;
+
+        match eval {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                msg = e.to_string();
+                assert_eq!("0で除算できません。", msg);
+            },
+        }
+
+        println!("{}", msg);
+    }
+
+    #[test]
+    fn test38() {
+        print!("test38 [20 / 5 / 2;] = ");
+
+        let tokens = lexer("20 / 5 / 2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(2, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test39() {
+        print!("test39 [2 * 3 + 4 * 5;] = ");
+
+        let tokens = lexer("2 * 3 + 4 * 5;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(26, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test40() {
+        print!("test40 [20 / (5 * 2);] = ");
+
+        let tokens = lexer("20 / (5 * 2);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(2, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test41() {
+        print!("test41 [(20 / 5) * 2;] = ");
+
+        let tokens = lexer("(20 / 5) * 2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+
+        let r = eval(expr).unwrap();
+
+        match r {
+            Value::Number(num) => {
+                assert_eq!(8, num);
+                println!("{}", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test42_err() {
+        print!("test42 [10 / ;] = ");
+
+        let tokens = lexer("10 / ;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse_expr();
+
+        let msg;
+
+        match expr {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                msg = e.to_string();
+                assert_eq!("予期せぬ値です。expr_primary = Semicolon", msg);
             },
         }
 

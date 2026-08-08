@@ -231,6 +231,17 @@ struct Parser {
 }
 
 impl Parser {
+    fn parse(&mut self) -> anyhow::Result<Vec<Expr>> {
+        let mut exprs = Vec::new();
+
+        while let Some(_) = self.peek() {
+            let expr = self.parse_expr()?;
+            exprs.push(expr);
+        }
+
+        Ok(exprs)
+    }
+
     fn parse_expr(&mut self) -> anyhow::Result<Expr> {
         if let Some(token) = self.peek() {
             match token {
@@ -258,7 +269,7 @@ impl Parser {
                     }
 
                     if !self.consume(Token::Semicolon) {
-                        return Err(Error::msg("現在は関数のみが先頭の式として認められているので;が必要です。"));
+                        return Err(Error::msg("文の末尾がセミコロンでありません。"));
                     }
 
                     Ok(Expr::Func(self.get_func(&text, arg)))
@@ -482,12 +493,13 @@ fn println(value: Value) -> anyhow::Result<Value> {
     Ok(Value::Unit)
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let tokens = lexer("println(123);");
     let mut parser = Parser::new(tokens);
-    if let Ok(expr) = parser.parse_expr() {
-        let _ = eval(expr);
-    }
+    let exprs = parser.parse()?;
+    let _ = eval_all(exprs)?;
+
+    Ok(())
 }
 
 fn lexer(code: &str) -> Vec<Token> {
@@ -557,13 +569,20 @@ fn push_literal(tokens: &mut Vec<Token>, token: &mut String) {
     }
 }
 
-fn eval(expr: Expr) -> anyhow::Result<Value> {
-    expr.eval()
+fn eval_all(exprs: Vec<Expr>) -> anyhow::Result<Vec<Value>> {
+    let mut values = Vec::new();
+
+    for expr in exprs {
+        let value = expr.eval()?;
+        values.push(value);
+    }
+
+    Ok(values)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{eval, lexer, Parser, Value};
+    use crate::{eval_all, lexer, Parser, Value};
 
     #[test]
     fn test01() {
@@ -571,11 +590,15 @@ mod tests {
 
         let tokens = lexer("println(12345);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -590,11 +613,15 @@ mod tests {
 
         let tokens = lexer("println(3 + 2);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -609,11 +636,15 @@ mod tests {
 
         let tokens = lexer("println(1 + 2 + 5);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -628,11 +659,15 @@ mod tests {
 
         let tokens = lexer("println(3 + 12 + 7 + 10);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -647,11 +682,15 @@ mod tests {
 
         let tokens = lexer("println(10 - 7);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -666,11 +705,15 @@ mod tests {
 
         let tokens = lexer("println(10 - 7 + 2);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -685,11 +728,15 @@ mod tests {
 
         let tokens = lexer("println(10 - 7 + 2 - 4);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -704,11 +751,15 @@ mod tests {
 
         let tokens = lexer("println(5 - 7 - 4);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -723,11 +774,15 @@ mod tests {
 
         let tokens = lexer("println((1 + 2) + 3);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -742,11 +797,15 @@ mod tests {
 
         let tokens = lexer("println(10 - (3 + 2));");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -761,11 +820,15 @@ mod tests {
 
         let tokens = lexer("println((10 - 3) - 2);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -780,11 +843,15 @@ mod tests {
 
         let tokens = lexer("println(5 + (10 - 3) - 2);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -799,11 +866,15 @@ mod tests {
 
         let tokens = lexer("println(((1 + 2) - (3 + 4)) + 5);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -818,11 +889,15 @@ mod tests {
 
         let tokens = lexer("println((1 + 2 - 3 + 4) + 5);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -837,11 +912,15 @@ mod tests {
 
         let tokens = lexer("println(1 + (2 - 3 + 4 + 5));");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        let r = eval_all(expr).unwrap();
 
-        match r {
+        if r.len() > 1 {
+            unreachable!()
+        }
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -856,7 +935,7 @@ mod tests {
 
         let tokens = lexer("println((1 + 2 + 3);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr();
+        let expr = parser.parse();
 
         let msg ;
 
@@ -879,7 +958,7 @@ mod tests {
 
         let tokens = lexer("println(1 + (2 + 3);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr();
+        let expr = parser.parse();
 
         let msg;
 
@@ -902,7 +981,7 @@ mod tests {
 
         let tokens = lexer("println(1 + 2));");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr();
+        let expr = parser.parse();
 
         let msg;
 
@@ -912,7 +991,7 @@ mod tests {
             },
             Err(e) => {
                 msg = e.to_string();
-                assert_eq!("現在は関数のみが先頭の式として認められているので;が必要です。", msg);
+                assert_eq!("文の末尾がセミコロンでありません。", msg);
             },
         }
 
@@ -925,7 +1004,7 @@ mod tests {
 
         let tokens = lexer("println((1 + 2)));");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr();
+        let expr = parser.parse();
 
         let msg;
 
@@ -935,7 +1014,7 @@ mod tests {
             },
             Err(e) => {
                 msg = e.to_string();
-                assert_eq!("現在は関数のみが先頭の式として認められているので;が必要です。", msg);
+                assert_eq!("文の末尾がセミコロンでありません。", msg);
             },
         }
 
@@ -948,7 +1027,7 @@ mod tests {
 
         let tokens = lexer("println(1 + 2 + 3)");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr();
+        let expr = parser.parse();
 
         let msg;
 
@@ -958,7 +1037,7 @@ mod tests {
             },
             Err(e) => {
                 msg = e.to_string();
-                assert_eq!("現在は関数のみが先頭の式として認められているので;が必要です。", msg);
+                assert_eq!("文の末尾がセミコロンでありません。", msg);
             },
         }
 
@@ -971,11 +1050,15 @@ mod tests {
 
         let tokens = lexer("1 + 3;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(4, num);
                 println!("{}", num);
@@ -992,11 +1075,15 @@ mod tests {
 
         let tokens = lexer("3 - 1;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(2, num);
                 println!("{}", num);
@@ -1013,11 +1100,15 @@ mod tests {
 
         let tokens = lexer("3 + 4 - 5;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(2, num);
                 println!("{}", num);
@@ -1034,11 +1125,15 @@ mod tests {
 
         let tokens = lexer("(3 + 2) - (7 + 3);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(-5, num);
                 println!("{}", num);
@@ -1055,11 +1150,15 @@ mod tests {
 
         let tokens = lexer("((3 + 2) - (7 + 3)) + 20;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(15, num);
                 println!("{}", num);
@@ -1076,11 +1175,15 @@ mod tests {
 
         let tokens = lexer("200 + ((100 - 20) + (15 + 20));");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(315, num);
                 println!("{}", num);
@@ -1097,11 +1200,15 @@ mod tests {
 
         let tokens = lexer("((10 + 20) - (30 + 70) - (200 - 150));");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(-120, num);
                 println!("{}", num);
@@ -1118,7 +1225,7 @@ mod tests {
 
         let tokens = lexer("1 + 2 - 3");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr();
+        let expr = parser.parse();
 
         let msg;
 
@@ -1141,11 +1248,15 @@ mod tests {
 
         let tokens = lexer("3 * 3;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(9, num);
                 println!("{}", num);
@@ -1162,11 +1273,15 @@ mod tests {
 
         let tokens = lexer("120 / 4;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(30, num);
                 println!("{}", num);
@@ -1183,11 +1298,15 @@ mod tests {
 
         let tokens = lexer("10 * 20 / 2;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(100, num);
                 println!("{}", num);
@@ -1204,11 +1323,15 @@ mod tests {
 
         let tokens = lexer("3 + 5 * 5;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(28, num);
                 println!("{}", num);
@@ -1225,11 +1348,15 @@ mod tests {
 
         let tokens = lexer("3 + 5 * 5 + 10 / 5;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(30, num);
                 println!("{}", num);
@@ -1246,11 +1373,15 @@ mod tests {
 
         let tokens = lexer("(10 + 1) * (3 + 8);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(121, num);
                 println!("{}", num);
@@ -1267,11 +1398,15 @@ mod tests {
 
         let tokens = lexer("print(12 * 10);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Unit => {
                 println!();
             },
@@ -1287,11 +1422,15 @@ mod tests {
 
         let tokens = lexer("println((5 - 10) / (1 + 1));");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -1306,9 +1445,9 @@ mod tests {
 
         let tokens = lexer("10 / 0;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr();
+        let expr = parser.parse();
 
-        let eval = eval(expr.unwrap());
+        let eval = eval_all(expr.unwrap());
 
         let msg;
 
@@ -1331,11 +1470,15 @@ mod tests {
 
         let tokens = lexer("20 / 5 / 2;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(2, num);
                 println!("{}", num);
@@ -1352,11 +1495,15 @@ mod tests {
 
         let tokens = lexer("2 * 3 + 4 * 5;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(26, num);
                 println!("{}", num);
@@ -1373,11 +1520,15 @@ mod tests {
 
         let tokens = lexer("20 / (5 * 2);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(2, num);
                 println!("{}", num);
@@ -1394,11 +1545,15 @@ mod tests {
 
         let tokens = lexer("(20 / 5) * 2;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(8, num);
                 println!("{}", num);
@@ -1415,7 +1570,7 @@ mod tests {
 
         let tokens = lexer("10 / ;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr();
+        let expr = parser.parse();
 
         let msg;
 
@@ -1438,11 +1593,15 @@ mod tests {
 
         let tokens = lexer("-10 + 15;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(5, num);
                 println!("{}", num);
@@ -1459,11 +1618,15 @@ mod tests {
 
         let tokens = lexer("6 + -2;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(4, num);
                 println!("{}", num);
@@ -1480,11 +1643,15 @@ mod tests {
 
         let tokens = lexer("6 - -2;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(8, num);
                 println!("{}", num);
@@ -1501,11 +1668,15 @@ mod tests {
 
         let tokens = lexer("-102;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(-102, num);
                 println!("{}", num);
@@ -1522,11 +1693,15 @@ mod tests {
 
         let tokens = lexer("-(1 + 3);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(-4, num);
                 println!("{}", num);
@@ -1543,11 +1718,15 @@ mod tests {
 
         let tokens = lexer("10 * -3;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(-30, num);
                 println!("{}", num);
@@ -1564,11 +1743,15 @@ mod tests {
 
         let tokens = lexer("-10 * 4;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(-40, num);
                 println!("{}", num);
@@ -1585,11 +1768,15 @@ mod tests {
 
         let tokens = lexer("10 / -2;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(-5, num);
                 println!("{}", num);
@@ -1606,11 +1793,15 @@ mod tests {
 
         let tokens = lexer("-10 / 2;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(-5, num);
                 println!("{}", num);
@@ -1627,11 +1818,15 @@ mod tests {
 
         let tokens = lexer("-(2 * 3);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(-6, num);
                 println!("{}", num);
@@ -1648,11 +1843,15 @@ mod tests {
 
         let tokens = lexer("(-1 + 6) * (2 -- 3) + -(10 / 2);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(20, num);
                 println!("{}", num);
@@ -1669,11 +1868,15 @@ mod tests {
 
         let tokens = lexer("println(-20 + 5);");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Unit => {
             },
             _ => {
@@ -1688,11 +1891,15 @@ mod tests {
 
         let tokens = lexer("10 - - -1;");
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse().unwrap();
 
-        let r = eval(expr).unwrap();
+        if expr.len() > 1 {
+            unreachable!()
+        }
 
-        match r {
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
             Value::Number(num) => {
                 assert_eq!(9, num);
                 println!("{}", num);
@@ -1701,5 +1908,93 @@ mod tests {
                 unreachable!()
             },
         }
+    }
+
+    #[test]
+    fn test56() {
+        print!("test56 [1 + 2; 3 + 4 - 5; -6 * 2;] = ");
+
+        let tokens = lexer("1 + 2; 3 + 4 - 5; -6 * 2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        if expr.len() != 3 {
+            unreachable!()
+        }
+
+        let r = eval_all(expr).unwrap();
+
+        match r[0] {
+            Value::Number(num) => {
+                assert_eq!(3, num);
+                print!("{}; ", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+
+        match r[1] {
+            Value::Number(num) => {
+                assert_eq!(2, num);
+                print!("{}; ", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+
+        match r[2] {
+            Value::Number(num) => {
+                assert_eq!(-12, num);
+                println!("{};", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+    }
+
+    #[test]
+    fn test57() {
+        print!("test57 [(1 + 2) * (3 + 4); print(5 + 5); print(2 * 2 * 2);] = ");
+
+        let tokens = lexer("(1 + 2) * (3 + 4); print(5 + 5); print(2 * 2 * 2);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        if expr.len() != 3 {
+            unreachable!()
+        }
+
+        let r = eval_all(expr).unwrap();
+
+
+        match r[0] {
+            Value::Number(num) => {
+                assert_eq!(21, num);
+                println!("{}; ", num);
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+        
+        match r[1] {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+
+        match r[2] {
+            Value::Unit => {
+            },
+            _ => {
+                unreachable!()
+            },
+        }
+
     }
 }

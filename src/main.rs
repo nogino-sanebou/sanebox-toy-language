@@ -1,6 +1,54 @@
+use std::slice::Iter;
 use anyhow::Error;
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq, Debug)]
+struct Statements {
+    stmts: Vec<Stmt>,
+}
+
+impl Statements {
+    fn push(&mut self, stmt: Stmt) {
+        self.stmts.push(stmt);
+    }
+
+    fn iter(&self) -> Iter<Stmt>{
+        self.stmts.iter()
+    }
+
+    fn len(&self) -> usize {
+        self.stmts.len()
+    }
+
+    fn new() -> Self {
+        Self {
+            stmts: Vec::new(),
+        }
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+enum Stmt {
+    Expr(Expr),
+    Let {
+        name: String,
+        expr: Expr,
+    },
+    If {
+        condition: Expr,
+        then_branch: Statements,
+        else_branch: Option<Statements>,
+    },
+    While {
+        condition: Expr,
+        body: Statements,
+    },
+    For {
+        body: Statements,
+        // TODO: for の構文を決めてから init/condition/update などを追加する
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
 enum Expr {
     // Expr(Box<Expr>),
     Value(Value),
@@ -49,13 +97,13 @@ impl Expr {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 enum BuiltinFunc {
     Print(Box<Expr>),
     Println(Box<Expr>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 struct Binary {
     lhs: Box<Expr>,
     rhs: Box<Expr>,
@@ -160,7 +208,7 @@ impl Binary {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 enum Op {
     Add,
     Sub,
@@ -168,12 +216,12 @@ enum Op {
     Div,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 enum UnaryOp {
     Neg,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 struct Unary {
     expr: Box<Expr>,
     op: UnaryOp,
@@ -205,7 +253,7 @@ impl Unary {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 enum Value {
     Unit,
     Number(i64),
@@ -231,15 +279,49 @@ struct Parser {
 }
 
 impl Parser {
-    fn parse(&mut self) -> anyhow::Result<Vec<Expr>> {
-        let mut exprs = Vec::new();
+    fn parse(&mut self) -> anyhow::Result<Statements> {
+        let mut stmts = Statements::new();
 
-        while let Some(_) = self.peek() {
-            let expr = self.parse_expr()?;
-            exprs.push(expr);
+        while self.peek().is_some() {
+            let stmt = self.parse_stmt()?;
+            stmts.push(stmt);
         }
 
-        Ok(exprs)
+        Ok(stmts)
+    }
+
+    fn parse_stmt(&mut self) -> anyhow::Result<Stmt> {
+        let stmt = if let Some(token) = self.peek() {
+            match token {
+                // テキストは予約語、また関数として処理する
+                Token::Text(text) => {
+                    // ここでtextを比較して、let, if, forなどの予約語があった場合はそれぞれの処理に移動したい
+
+                    // 予約語ではなかった場合、関数として処理
+                    let expr = self.parse_expr()?;
+
+                    if !self.consume(Token::Semicolon) {
+                        return Err(Error::msg("式の末尾がセミコロンでありません。"));
+                    }
+
+                    Stmt::Expr(expr)
+                }
+                // 予約語、または関数でない場合は式として処理
+                _ => {
+                    let expr = self.parse_expr()?;
+
+                    if !self.consume(Token::Semicolon) {
+                        return Err(Error::msg("式の末尾がセミコロンでありません。"));
+                    }
+
+                    Stmt::Expr(expr)
+                }
+            }
+        } else {
+            return Err(Error::msg("式の内容が不正です。"));
+        };
+
+        Ok(stmt)
     }
 
     fn parse_expr(&mut self) -> anyhow::Result<Expr> {
@@ -256,8 +338,8 @@ impl Parser {
                     }
 
                     let arg = match self.expr_add() {
-                        Ok(o) => {
-                            o
+                        Ok(expr) => {
+                            expr
                         },
                         Err(e) => {
                             return Err(e);
@@ -268,15 +350,11 @@ impl Parser {
                         return Err(Error::msg("関数名が)で閉じられていません。"));
                     }
 
-                    if !self.consume(Token::Semicolon) {
-                        return Err(Error::msg("文の末尾がセミコロンでありません。"));
-                    }
-
-                    Ok(Expr::Func(self.get_func(&text, arg)))
+                    Ok(self.get_func(&text, arg))
                 },
-                // 数値、開始括弧、単項マイナスが来たら式文として処理をする
+                // 数値、開始括弧、単項マイナスが来たら式として処理をする
                 Token::Number(_) | Token::LParen | Token::Minus => {
-                    Ok(self.expr_stmt()?)
+                    Ok(self.expr_add()?)
                 },
                 _ => {
                     Err(Error::msg("構文が想定外です。:parse_expr"))
@@ -296,13 +374,15 @@ impl Parser {
         }
     }
 
-    fn get_func(&self, name: &str, args: Expr) -> BuiltinFunc {
+    fn get_func(&self, name: &str, args: Expr) -> Expr {
         match name {
             "print" => {
-                BuiltinFunc::Print(Box::new(args))
+                let func = BuiltinFunc::Print(Box::new(args));
+                Expr::Func(func)
             },
             "println" => {
-                BuiltinFunc::Println(Box::new(args))
+                let func = BuiltinFunc::Println(Box::new(args));
+                Expr::Func(func)
             },
             _ => {
                 panic!("{}", format!("存在しない関数名です。{}", name))
@@ -396,9 +476,7 @@ impl Parser {
                     self.next();
 
                     let expr = self.expr_unary()?;
-
                     let unary = Unary::new(Box::new(expr), UnaryOp::Neg);
-
                     Ok(Expr::Unary(unary))
                 },
                 _ => {
@@ -435,16 +513,6 @@ impl Parser {
     }
 
     // 式文処理
-    fn expr_stmt(&mut self) -> anyhow::Result<Expr> {
-        let res = self.expr_add()?;
-
-        if !self.consume(Token::Semicolon) {
-            return Err(Error::msg("式文の末尾がセミコロンでありません。"));
-        }
-
-        Ok(res)
-    }
-
     fn next(&mut self) -> Option<Token> {
         let token = self.tokens.get(self.pos).cloned();
         if token.is_some() {
@@ -569,12 +637,22 @@ fn push_literal(tokens: &mut Vec<Token>, token: &mut String) {
     }
 }
 
-fn eval_all(exprs: Vec<Expr>) -> anyhow::Result<Vec<Value>> {
+fn eval_all(stmts: Statements) -> anyhow::Result<Vec<Value>> {
     let mut values = Vec::new();
 
-    for expr in exprs {
-        let value = expr.eval()?;
-        values.push(value);
+    for stmt in stmts.iter() {
+        // 文の内容によって処理を変える
+        match stmt {
+            // 式、関数の処理
+            Stmt::Expr(expr) => {
+                let value = expr.eval()?;
+                values.push(value);
+            },
+            // let, if, forなどの予約語の処理
+            _ => {
+                return Err(Error::msg("未実装の文です。"));
+            }
+        }
     }
 
     Ok(values)
@@ -991,7 +1069,7 @@ mod tests {
             },
             Err(e) => {
                 msg = e.to_string();
-                assert_eq!("文の末尾がセミコロンでありません。", msg);
+                assert_eq!("式の末尾がセミコロンでありません。", msg);
             },
         }
 
@@ -1014,7 +1092,7 @@ mod tests {
             },
             Err(e) => {
                 msg = e.to_string();
-                assert_eq!("文の末尾がセミコロンでありません。", msg);
+                assert_eq!("式の末尾がセミコロンでありません。", msg);
             },
         }
 
@@ -1037,7 +1115,7 @@ mod tests {
             },
             Err(e) => {
                 msg = e.to_string();
-                assert_eq!("文の末尾がセミコロンでありません。", msg);
+                assert_eq!("式の末尾がセミコロンでありません。", msg);
             },
         }
 
@@ -1235,7 +1313,7 @@ mod tests {
             },
             Err(e) => {
                 msg = e.to_string();
-                assert_eq!("式文の末尾がセミコロンでありません。", msg);
+                assert_eq!("式の末尾がセミコロンでありません。", msg);
             },
         }
 
@@ -1924,35 +2002,14 @@ mod tests {
 
         let r = eval_all(expr).unwrap();
 
-        match r[0] {
-            Value::Number(num) => {
-                assert_eq!(3, num);
-                print!("{}; ", num);
-            },
-            _ => {
-                unreachable!()
-            },
-        }
-
-        match r[1] {
-            Value::Number(num) => {
-                assert_eq!(2, num);
-                print!("{}; ", num);
-            },
-            _ => {
-                unreachable!()
-            },
-        }
-
-        match r[2] {
-            Value::Number(num) => {
-                assert_eq!(-12, num);
-                println!("{};", num);
-            },
-            _ => {
-                unreachable!()
-            },
-        }
+        assert_eq!(
+            r,
+            vec![
+                Value::Number(3),
+                Value::Number(2),
+                Value::Number(-12),
+            ]
+        );
     }
 
     #[test]
@@ -1969,32 +2026,37 @@ mod tests {
 
         let r = eval_all(expr).unwrap();
 
+        assert_eq!(
+            r,
+            vec![
+                Value::Number(21),
+                Value::Unit,
+                Value::Unit,
+            ]
+        );
+    }
 
-        match r[0] {
-            Value::Number(num) => {
-                assert_eq!(21, num);
-                println!("{}; ", num);
-            },
-            _ => {
-                unreachable!()
-            },
-        }
-        
-        match r[1] {
-            Value::Unit => {
-            },
-            _ => {
-                unreachable!()
-            },
-        }
+    #[test]
+    fn test58() {
+        print!("test58 [1 + 10;\n2 + 30;\n14 / 2;] = ");
 
-        match r[2] {
-            Value::Unit => {
-            },
-            _ => {
-                unreachable!()
-            },
+        let tokens = lexer("1 + 10;\n2 - 30;\n14 / 2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        if expr.len() != 3 {
+            unreachable!()
         }
 
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Number(11),
+                Value::Number(-28),
+                Value::Number(7),
+            ]
+        );
     }
 }

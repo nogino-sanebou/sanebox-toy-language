@@ -88,6 +88,10 @@ impl Expr {
                         let r = println(r)?;
                         Ok(r)
                     },
+                    BuiltinFunc::Abs(expr) => {
+                        let r = abs(expr.eval()?)?;
+                        Ok(r)
+                    },
                 }
             },
             Expr::Unary(unary) => {
@@ -101,6 +105,41 @@ impl Expr {
 enum BuiltinFunc {
     Print(Box<Expr>),
     Println(Box<Expr>),
+    Abs(Box<Expr>),
+}
+
+fn print(value: Value) -> anyhow::Result<Value> {
+    match value {
+        Value::Number(num) => {
+            print!("{}", num);
+            Ok(Value::Unit)
+        },
+        _ => {
+            Err(Error::msg("想定外のvalue-print"))
+        },
+    }
+}
+
+fn println(value: Value) -> anyhow::Result<Value> {
+    print(value)?;
+    println!();
+
+    Ok(Value::Unit)
+}
+
+fn abs(value: Value) -> anyhow::Result<Value> {
+    match value {
+        Value::Number(num) => {
+            let num = num
+                .checked_abs()
+                .ok_or_else(|| Error::msg("absでオーバーフローしました。"))?;
+
+            Ok(Value::Number(num))
+        },
+        _ => {
+            Err(Error::msg("数値以外が出現しました。Abs"))
+        },
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -291,103 +330,17 @@ impl Parser {
     }
 
     fn parse_stmt(&mut self) -> anyhow::Result<Stmt> {
-        let stmt = if let Some(token) = self.peek() {
-            match token {
-                // テキストは予約語、また関数として処理する
-                Token::Text(text) => {
-                    // ここでtextを比較して、let, if, forなどの予約語があった場合はそれぞれの処理に移動したい
+        let expr = self.parse_expr()?;
 
-                    // 予約語ではなかった場合、関数として処理
-                    let expr = self.parse_expr()?;
+        if !self.consume(Token::Semicolon) {
+            return Err(Error::msg("式の末尾がセミコロンでありません。"));
+        }
 
-                    if !self.consume(Token::Semicolon) {
-                        return Err(Error::msg("式の末尾がセミコロンでありません。"));
-                    }
-
-                    Stmt::Expr(expr)
-                }
-                // 予約語、または関数でない場合は式として処理
-                _ => {
-                    let expr = self.parse_expr()?;
-
-                    if !self.consume(Token::Semicolon) {
-                        return Err(Error::msg("式の末尾がセミコロンでありません。"));
-                    }
-
-                    Stmt::Expr(expr)
-                }
-            }
-        } else {
-            return Err(Error::msg("式の内容が不正です。"));
-        };
-
-        Ok(stmt)
+        Ok(Stmt::Expr(expr))
     }
 
     fn parse_expr(&mut self) -> anyhow::Result<Expr> {
-        if let Some(token) = self.peek() {
-            match token {
-                // テキストは関数として処理をする
-                Token::Text(text) => {
-                    if !self.is_func(&text) {
-                        return Err(Error::msg("現在は関数名以外認めていません"));
-                    }
-                    self.next();
-                    if !self.consume(Token::LParen) {
-                        return Err(Error::msg("現在は関数名の次は(である必要があります。"));
-                    }
-
-                    let arg = match self.expr_add() {
-                        Ok(expr) => {
-                            expr
-                        },
-                        Err(e) => {
-                            return Err(e);
-                        },
-                    };
-
-                    if !self.consume(Token::RParen) {
-                        return Err(Error::msg("関数名が)で閉じられていません。"));
-                    }
-
-                    Ok(self.get_func(&text, arg))
-                },
-                // 数値、開始括弧、単項マイナスが来たら式として処理をする
-                Token::Number(_) | Token::LParen | Token::Minus => {
-                    Ok(self.expr_add()?)
-                },
-                _ => {
-                    Err(Error::msg("構文が想定外です。:parse_expr"))
-                },
-            }
-        } else {
-            Err(Error::msg("構文が想定外です。:parse_expr"))
-        }
-    }
-
-    fn is_func(&self, name: &str) -> bool {
-        match name {
-            "print" | "println" => {
-                true
-            },
-            _ => false
-        }
-    }
-
-    fn get_func(&self, name: &str, args: Expr) -> Expr {
-        match name {
-            "print" => {
-                let func = BuiltinFunc::Print(Box::new(args));
-                Expr::Func(func)
-            },
-            "println" => {
-                let func = BuiltinFunc::Println(Box::new(args));
-                Expr::Func(func)
-            },
-            _ => {
-                panic!("{}", format!("存在しない関数名です。{}", name))
-            },
-        }
+        self.expr_add()
     }
 
     // 加算・減算処理
@@ -492,6 +445,9 @@ impl Parser {
     fn expr_primary(&mut self) -> anyhow::Result<Expr> {
         if let Some(token) = self.next() {
             match token {
+                Token::Text(text) => {
+                    Ok(self.expr_name(text)?)
+                },
                 Token::Number(num) => {
                     let num = Value::Number(num);
                     Ok(Expr::Value(num))
@@ -509,6 +465,61 @@ impl Parser {
             }
         } else {
             Err(Error::msg("予期せぬ値です。expr_primary"))
+        }
+    }
+
+    fn expr_name(&mut self, name: String) -> anyhow::Result<Expr> {
+        if self.peek() == Some(Token::LParen) {
+            self.expr_func(name)
+        } else {
+            Err(Error::msg(format!("現在は変数参照に対応していません。name = {}", name)))
+        }
+    }
+
+    fn expr_func(&mut self, name: String) -> anyhow::Result<Expr> {
+        if !self.is_func(&name) {
+            return Err(Error::msg("現在は関数名以外認めていません"));
+        }
+        if !self.consume(Token::LParen) {
+            return Err(Error::msg("現在は関数名の次は(である必要があります。"));
+        }
+
+        let arg = self.expr_add()?;
+
+        if !self.consume(Token::RParen) {
+            return Err(Error::msg("関数名が)で閉じられていません。"));
+        }
+
+        Ok(self.get_func(&name, arg))
+    }
+
+
+    fn is_func(&self, name: &str) -> bool {
+        match name {
+            "print" | "println" | "abs" => {
+                true
+            },
+            _ => false
+        }
+    }
+
+    fn get_func(&self, name: &str, args: Expr) -> Expr {
+        match name {
+            "print" => {
+                let func = BuiltinFunc::Print(Box::new(args));
+                Expr::Func(func)
+            },
+            "println" => {
+                let func = BuiltinFunc::Println(Box::new(args));
+                Expr::Func(func)
+            },
+            "abs" => {
+                let func = BuiltinFunc::Abs(Box::new(args));
+                Expr::Func(func)
+            }
+            _ => {
+                panic!("{}", format!("存在しない関数名です。{}", name))
+            },
         }
     }
 
@@ -540,25 +551,6 @@ impl Parser {
             pos: 0,
         }
     }
-}
-
-fn print(value: Value) -> anyhow::Result<Value> {
-    match value {
-        Value::Number(num) => {
-            print!("{}", num);
-            Ok(Value::Unit)
-        },
-        _ => {
-            Err(Error::msg("想定外のvalue-print"))
-        },
-    }
-}
-
-fn println(value: Value) -> anyhow::Result<Value> {
-    print(value)?;
-    println!();
-
-    Ok(Value::Unit)
 }
 
 fn main() -> anyhow::Result<()> {
@@ -2010,6 +2002,8 @@ mod tests {
                 Value::Number(-12),
             ]
         );
+
+        println!("{:?}", r);
     }
 
     #[test]
@@ -2034,11 +2028,13 @@ mod tests {
                 Value::Unit,
             ]
         );
+
+        println!("{:?}", r);
     }
 
     #[test]
     fn test58() {
-        print!("test58 [1 + 10;\n2 + 30;\n14 / 2;] = ");
+        print!("test58 [1 + 10;2 + 30;14 / 2;] = ");
 
         let tokens = lexer("1 + 10;\n2 - 30;\n14 / 2;");
         let mut parser = Parser::new(tokens);
@@ -2058,5 +2054,149 @@ mod tests {
                 Value::Number(7),
             ]
         );
+
+        println!("{:?}", r);
+    }
+
+    #[test]
+    fn test59() {
+        print!("test59 [abs(-10);] = ");
+
+        let tokens = lexer("abs(-10);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Number(10),
+            ]
+        );
+
+        println!("{:?}", r);
+    }
+
+    #[test]
+    fn test60() {
+        print!("test60 [1 + abs(-10); abs(-10) - 5; 2 * abs(-10) / 5;] = ");
+
+        let tokens = lexer("1 + abs(-10); abs(-10) - 5; 2 * abs(-10) / 5;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Number(11),
+                Value::Number(5),
+                Value::Number(4),
+            ]
+        );
+
+        println!("{:?}", r);
+    }
+
+    #[test]
+    fn test61_err() {
+        print!("test61 [1 + println(-10);] = ");
+
+        let tokens = lexer("1 + println(-10);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr);
+
+        match r {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "想定外のvalue add-rhs");
+            }
+        }
+    }
+
+    #[test]
+    fn test62_err() {
+        print!("test62 [print(-10 + 1) + 2;] = ");
+
+        let tokens = lexer("print(-10 + 1) + 2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr);
+
+        match r {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "想定外のvalue add-lhs");
+            }
+        }
+    }
+
+    #[test]
+    fn test63() {
+        print!("test63 [abs(-10) + abs(-20) + abs(30);] = ");
+
+        let tokens = lexer("abs(-10) + abs(-20) + abs(30);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Number(60),
+            ]
+        );
+
+        println!("{:?}", r);
+    }
+
+    #[test]
+    fn test64() {
+        print!("test64 [abs(-abs(-20));] = ");
+
+        let tokens = lexer("abs(-abs(-20));");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Number(20),
+            ]
+        );
+
+        println!("{:?}", r);
+    }
+
+    #[test]
+    fn test65_err() {
+        print!("test65 [abs(print(-10 + 1));] = ");
+
+        let tokens = lexer("abs(print(-10 + 1));");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr);
+
+        match r {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "数値以外が出現しました。Abs");
+            }
+        }
     }
 }

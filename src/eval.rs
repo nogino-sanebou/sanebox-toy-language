@@ -2,6 +2,38 @@ use anyhow::Error;
 
 use crate::ast::*;
 
+pub fn eval_all(stmts: Statements) -> anyhow::Result<Vec<Value>> {
+    let mut env = Environment::new();
+    let mut values = Vec::new();
+
+    for stmt in stmts.iter() {
+        // 文の内容によって処理を変える
+        match stmt {
+            // 式、関数の処理
+            Stmt::Expr(expr) => {
+                let value = eval(expr.clone())?;
+                values.push(value);
+            },
+            // 変数定義
+            Stmt::Let {name, expr} => {
+                let value = eval(expr.clone())?;
+                if value == Value::Unit {
+                    return Err(Error::msg("変数の値にUnitが出現しました。"));
+                }
+
+                env.define(name.clone(), value);
+                values.push(Value::Unit);
+            }
+            // if, forなどの予約語の処理
+            _ => {
+                return Err(Error::msg("未実装の文です。"));
+            }
+        }
+    }
+
+    Ok(values)
+}
+
 pub fn print(value: Value) -> anyhow::Result<Value> {
     match value {
         Value::Number(num) => {
@@ -76,25 +108,4 @@ pub fn eval(expr: Expr) -> anyhow::Result<Value> {
             Ok(unary.calc()?)
         },
     }
-}
-
-pub fn eval_all(stmts: Statements) -> anyhow::Result<Vec<Value>> {
-    let mut values = Vec::new();
-
-    for stmt in stmts.iter() {
-        // 文の内容によって処理を変える
-        match stmt {
-            // 式、関数の処理
-            Stmt::Expr(expr) => {
-                let value = eval(expr.clone())?;
-                values.push(value);
-            },
-            // let, if, forなどの予約語の処理
-            _ => {
-                return Err(Error::msg("未実装の文です。"));
-            }
-        }
-    }
-
-    Ok(values)
 }

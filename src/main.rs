@@ -1,11 +1,4 @@
-use crate::eval::eval_all;
-use crate::lexer::lexer;
-use crate::parser::Parser;
-
-mod lexer;
-mod parser;
-mod eval;
-mod ast;
+use sanebox::{eval_all, lexer, Parser};
 
 fn main() -> anyhow::Result<()> {
     let tokens = lexer("println(123);");

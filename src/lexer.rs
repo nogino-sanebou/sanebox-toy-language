@@ -9,6 +9,7 @@ pub enum Token {
     Asterisk,
     Slash,
     Semicolon,
+    Equal,
 }
 
 pub fn lexer(code: &str) -> Vec<Token> {
@@ -46,6 +47,10 @@ pub fn lexer(code: &str) -> Vec<Token> {
                 push_literal(&mut tokens, &mut token);
                 tokens.push(Token::Semicolon);
             },
+            '=' => {
+                push_literal(&mut  tokens, &mut token);
+                tokens.push(Token::Equal);
+            }
             c if c.is_whitespace() => {
                 push_literal(&mut tokens, &mut token);
             },

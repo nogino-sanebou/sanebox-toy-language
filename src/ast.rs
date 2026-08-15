@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::slice::Iter;
 use anyhow::Error;
 
@@ -13,12 +14,16 @@ impl Statements {
         self.stmts.push(stmt);
     }
 
-    pub fn iter(&self) -> Iter<Stmt>{
+    pub fn iter(&self) -> Iter<Stmt> {
         self.stmts.iter()
     }
 
     pub fn len(&self) -> usize {
         self.stmts.len()
+    }
+    
+    pub fn as_slice(&self) -> &[Stmt] {
+        &self.stmts
     }
 
     pub fn new() -> Self {
@@ -47,6 +52,26 @@ pub enum Stmt {
     For {
         body: Statements,
         // TODO: for の構文を決めてから init/condition/update などを追加する
+    }
+}
+
+pub struct Environment {
+    list: HashMap<String, Value>,
+}
+
+impl Environment {
+    pub fn define(&mut self, name: String, value: Value) {
+        self.list.insert(name, value);
+    }
+
+    pub fn get(&self, name: String) -> Option<&Value> {
+        self.list.get(&name)
+    }
+
+    pub fn new() -> Self {
+        Self {
+            list: HashMap::new(),
+        }
     }
 }
 

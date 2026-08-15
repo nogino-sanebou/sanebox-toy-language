@@ -3,6 +3,7 @@
 mod tests {
     use sanebox::*;
 
+    // println関数
     #[test]
     fn normal_001() {
         let tokens = lexer("println(12345);");
@@ -19,6 +20,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式)
     #[test]
     fn normal_002() {
         let tokens = lexer("println(3 + 2);");
@@ -35,6 +37,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(3))
     #[test]
     fn normal_003() {
         let tokens = lexer("println(1 + 2 + 5);");
@@ -51,6 +54,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(4))
     #[test]
     fn normal_004() {
         let tokens = lexer("println(3 + 12 + 7 + 10);");
@@ -67,6 +71,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(減算))
     #[test]
     fn normal_005() {
         let tokens = lexer("println(10 - 7);");
@@ -83,6 +88,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(加算・減算混在))
     #[test]
     fn normal_006() {
         let tokens = lexer("println(10 - 7 + 2);");
@@ -99,6 +105,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(加算・減算混在))
     #[test]
     fn normal_007() {
         let tokens = lexer("println(10 - 7 + 2 - 4);");
@@ -115,6 +122,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(減算))
     #[test]
     fn normal_008() {
         let tokens = lexer("println(5 - 7 - 4);");
@@ -131,6 +139,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(括弧付き))
     #[test]
     fn normal_009() {
         let tokens = lexer("println((1 + 2) + 3);");
@@ -147,6 +156,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(括弧付き))
     #[test]
     fn normal_010() {
         let tokens = lexer("println(10 - (3 + 2));");
@@ -163,6 +173,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(括弧付き))
     #[test]
     fn normal_011() {
         let tokens = lexer("println((10 - 3) - 2);");
@@ -179,6 +190,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(括弧付き))
     #[test]
     fn normal_012() {
         let tokens = lexer("println(5 + (10 - 3) - 2);");
@@ -195,6 +207,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(括弧付き))
     #[test]
     fn normal_013() {
         let tokens = lexer("println(((1 + 2) - (3 + 4)) + 5);");
@@ -211,6 +224,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(括弧付き))
     #[test]
     fn normal_014() {
         let tokens = lexer("println((1 + 2 - 3 + 4) + 5);");
@@ -227,6 +241,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(括弧付き))
     #[test]
     fn normal_015() {
         let tokens = lexer("println(1 + (2 - 3 + 4 + 5));");
@@ -243,6 +258,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(乗算))
     #[test]
     fn normal_016() {
         let tokens = lexer("print(12 * 10);");
@@ -259,6 +275,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(括弧付き))
     #[test]
     fn normal_017() {
         let tokens = lexer("println((5 - 10) / (1 + 1));");
@@ -275,6 +292,7 @@ mod tests {
         );
     }
 
+    // println関数(引数が計算式(マイナス値あり))
     #[test]
     fn normal_018() {
         let tokens = lexer("println(-20 + 5);");
@@ -291,6 +309,7 @@ mod tests {
         );
     }
 
+    // abs関数
     #[test]
     fn normal_019() {
         let tokens = lexer("abs(-10);");
@@ -307,6 +326,7 @@ mod tests {
         );
     }
 
+    // 複数のabs関数を計算
     #[test]
     fn normal_020() {
         let tokens = lexer("abs(-10) + abs(-20) + abs(30);");
@@ -323,6 +343,7 @@ mod tests {
         );
     }
 
+    // abs関数の中にabs関数
     #[test]
     fn normal_021() {
         let tokens = lexer("abs(-abs(-20));");

@@ -20,6 +20,64 @@ impl Parser {
     }
 
     fn parse_stmt(&mut self) -> anyhow::Result<Stmt> {
+        let token = self.peek().unwrap();
+        let stmt = match token {
+            Token::Text(text) => {
+                match text.as_str() {
+                    // 変数の処理
+                    "let" => {
+                        self.parse_let_stmt()?
+                    },
+                    // 変数でなければ関数として処理
+                    _ => {
+                        self.parse_expr_stmt()?
+                    }
+                }
+            }
+            // 予約語でなければ計算式として処理する
+            _ => {
+                self.parse_expr_stmt()?
+            }
+        };
+
+        Ok(stmt)
+    }
+
+    fn parse_let_stmt(&mut self) -> anyhow::Result<Stmt> {
+        self.next();
+        let name = match self.next() {
+            Some(Token::Text(name)) => {
+                if self.is_keyword(&name) {
+                    let msg = format!("変数名に予約語は使用できません。name = {}", name);
+                    return Err(Error::msg(msg));
+                }
+
+                name
+            },
+            Some(token) => {
+                let msg = format!("変数名が文字列ではありません。token = {:?}", token);
+                return Err(Error::msg(msg));
+            },
+            None => {
+                return Err(Error::msg("letの後に変数名がありません。"));
+            }
+        };
+
+        if !self.consume(Token::Equal) {
+            let msg = format!("変数名の次は「=」でないといけません。token = {:?}", self.peek());
+            return Err(Error::msg(msg));
+        }
+
+        let expr = self.expr_add()?;
+
+        if !self.consume(Token::Semicolon) {
+            return Err(Error::msg("式の末尾がセミコロンでありません。"));
+        }
+
+        Ok(Stmt::Let { name, expr })
+    }
+
+    fn parse_expr_stmt(&mut self) -> anyhow::Result<Stmt> {
         let expr = self.parse_expr()?;
 
         if !self.consume(Token::Semicolon) {
@@ -27,6 +85,18 @@ impl Parser {
         }
 
         Ok(Stmt::Expr(expr))
+    }
+
+    // 予約語であるか確認
+    fn is_keyword(&self, text: &String) -> bool {
+        match text.as_str() {
+            "let" => {
+                true
+            }
+            _ => {
+                false
+            }
+        }
     }
 
     fn parse_expr(&mut self) -> anyhow::Result<Expr> {
@@ -160,6 +230,7 @@ impl Parser {
 
     fn expr_name(&mut self, name: String) -> anyhow::Result<Expr> {
         if self.peek() == Some(Token::LParen) {
+            self.next();
             self.expr_func(name)
         } else {
             Err(Error::msg(format!("現在は変数参照に対応していません。name = {}", name)))
@@ -170,14 +241,12 @@ impl Parser {
         if !self.is_func(&name) {
             return Err(Error::msg(format!("存在しない関数です。name = {}", name)));
         }
-        if !self.consume(Token::LParen) {
-            return Err(Error::msg("現在は関数名の次は(である必要があります。"));
-        }
 
         let arg = self.expr_add()?;
 
         if !self.consume(Token::RParen) {
-            return Err(Error::msg("関数名が)で閉じられていません。"));
+            let msg = format!("関数名が)で閉じられていません。token = {:?}", self.peek());
+            return Err(Error::msg(msg));
         }
 
         Ok(self.get_func(&name, arg))

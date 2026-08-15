@@ -2,6 +2,7 @@
 mod tests {
     use sanebox::*;
 
+    // 加算
     #[test]
     fn normal_001() {
         let tokens = lexer("1 + 3;");
@@ -18,6 +19,7 @@ mod tests {
         );
     }
 
+    // 減算
     #[test]
     fn normal_002() {
         let tokens = lexer("3 - 1;");
@@ -34,6 +36,7 @@ mod tests {
         );
     }
 
+    // 加算・減算混在
     #[test]
     fn normal_003() {
         let tokens = lexer("3 + 4 - 5;");
@@ -50,6 +53,7 @@ mod tests {
         );
     }
 
+    // 乗算
     #[test]
     fn normal_004() {
         let tokens = lexer("3 * 3;");
@@ -66,6 +70,7 @@ mod tests {
         );
     }
 
+    // 除算
     #[test]
     fn normal_005() {
         let tokens = lexer("120 / 4;");
@@ -82,6 +87,7 @@ mod tests {
         );
     }
 
+    // 乗算・除算混在
     #[test]
     fn normal_006() {
         let tokens = lexer("10 * 20 / 2;");
@@ -98,6 +104,7 @@ mod tests {
         );
     }
 
+    // 加算・乗算混在
     #[test]
     fn normal_007() {
         let tokens = lexer("3 + 5 * 5;");
@@ -114,6 +121,7 @@ mod tests {
         );
     }
 
+    // 加算・乗算・除算混在
     #[test]
     fn normal_008() {
         let tokens = lexer("3 + 5 * 5 + 10 / 5;");
@@ -130,6 +138,7 @@ mod tests {
         );
     }
 
+    // 複数除算
     #[test]
     fn normal_009() {
         let tokens = lexer("20 / 5 / 2;");
@@ -146,6 +155,7 @@ mod tests {
         );
     }
 
+    // 乗算・加算混在
     #[test]
     fn normal_010() {
         let tokens = lexer("2 * 3 + 4 * 5;");
@@ -162,6 +172,7 @@ mod tests {
         );
     }
 
+    // 後方に括弧
     #[test]
     fn normal_011() {
         let tokens = lexer("20 / (5 * 2);");
@@ -178,6 +189,7 @@ mod tests {
         );
     }
 
+    // 前方に括弧
     #[test]
     fn normal_012() {
         let tokens = lexer("(20 / 5) * 2;");
@@ -194,6 +206,7 @@ mod tests {
         );
     }
 
+    // マイナスの数値に別の自然数を加算
     #[test]
     fn normal_013() {
         let tokens = lexer("-10 + 15;");
@@ -210,6 +223,7 @@ mod tests {
         );
     }
 
+    // 別な自然数にマイナスの数値を加算
     #[test]
     fn normal_014() {
         let tokens = lexer("6 + -2;");
@@ -226,6 +240,7 @@ mod tests {
         );
     }
 
+    // 別な自然数にマイナスの数値を減算
     #[test]
     fn normal_015() {
         let tokens = lexer("6 - -2;");
@@ -242,6 +257,7 @@ mod tests {
         );
     }
 
+    // マイナス単体
     #[test]
     fn normal_016() {
         let tokens = lexer("-102;");
@@ -258,6 +274,7 @@ mod tests {
         );
     }
 
+    // 括弧を付けたマイナス単体
     #[test]
     fn normal_017() {
         let tokens = lexer("-(1 + 3);");
@@ -274,6 +291,7 @@ mod tests {
         );
     }
 
+    // 別な自然数にマイナスの数値を乗算
     #[test]
     fn normal_018() {
         let tokens = lexer("10 * -3;");
@@ -290,6 +308,7 @@ mod tests {
         );
     }
 
+    // マイナスの数値に別の自然数を乗算
     #[test]
     fn normal_019() {
         let tokens = lexer("-10 * 4;");
@@ -314,6 +333,7 @@ mod tests {
         }
     }
 
+    // 別な自然数にマイナスの数値を除算
     #[test]
     fn normal_020() {
         let tokens = lexer("10 / -2;");
@@ -330,6 +350,7 @@ mod tests {
         );
     }
 
+    // マイナスの数値に別の自然数を除算
     #[test]
     fn normal_021() {
         let tokens = lexer("-10 / 2;");
@@ -346,6 +367,7 @@ mod tests {
         );
     }
 
+    // 括弧の中身が乗算のマイナス
     #[test]
     fn normal_022() {
         let tokens = lexer("-(2 * 3);");
@@ -362,6 +384,7 @@ mod tests {
         );
     }
 
+    // 複数のマイナス値を含めた計算
     #[test]
     fn normal_023() {
         let tokens = lexer("(-1 + 6) * (2 -- 3) + -(10 / 2);");
@@ -378,6 +401,7 @@ mod tests {
         );
     }
 
+    // 括弧同士の計算
     #[test]
     fn normal_024() {
         let tokens = lexer("(3 + 2) - (7 + 3);");
@@ -394,6 +418,7 @@ mod tests {
         );
     }
 
+    // ２重括弧のある計算(前方)
     #[test]
     fn normal_025() {
         let tokens = lexer("((3 + 2) - (7 + 3)) + 20;");
@@ -410,6 +435,7 @@ mod tests {
         );
     }
 
+    // ２重括弧のある計算(後方)
     #[test]
     fn normal_026() {
         let tokens = lexer("200 + ((100 - 20) + (15 + 20));");
@@ -426,6 +452,7 @@ mod tests {
         );
     }
 
+    // ２重括弧のある計算(全てを括弧で括る)
     #[test]
     fn normal_027() {
         let tokens = lexer("((10 + 20) - (30 + 70) - (200 - 150));");
@@ -442,6 +469,7 @@ mod tests {
         );
     }
 
+    // 括弧のある乗算
     #[test]
     fn normal_028() {
         let tokens = lexer("(10 + 1) * (3 + 8);");
@@ -458,6 +486,7 @@ mod tests {
         );
     }
 
+    // マイナスが複数あった場合
     #[test]
     fn normal_029() {
         let tokens = lexer("10 - - -1;");
@@ -474,6 +503,7 @@ mod tests {
         );
     }
 
+    // 関数と組み合わせた計算
     #[test]
     fn normal_030() {
         let tokens = lexer("1 + abs(-10); abs(-10) - 5; 2 * abs(-10) / 5;");

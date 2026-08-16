@@ -77,11 +77,11 @@ impl Environment {
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum Expr {
-    // Expr(Box<Expr>),
     Value(Value),
     Func(BuiltinFunc),
     Binary(Binary),
     Unary(Unary),
+    Variable(String),
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -107,9 +107,9 @@ impl Binary {
         }
     }
 
-    pub fn calc(&self) -> anyhow::Result<Value> {
-        let lhs = eval(*self.lhs.clone())?;
-        let rhs = eval(*self.rhs.clone())?;
+    pub fn calc(&self, env: &Environment) -> anyhow::Result<Value> {
+        let lhs = eval(*self.lhs.clone(), &env)?;
+        let rhs = eval(*self.rhs.clone(), &env)?;
 
         match &self.op {
             Op::Add => {
@@ -223,8 +223,8 @@ impl Unary {
         }
     }
 
-    pub fn calc(&self) -> anyhow::Result<Value> {
-        let value = eval(*self.expr.clone())?;
+    pub fn calc(&self, env: &Environment) -> anyhow::Result<Value> {
+        let value = eval(*self.expr.clone(), &env)?;
 
         match self.op {
             UnaryOp::Neg => {
@@ -245,5 +245,4 @@ impl Unary {
 pub enum Value {
     Unit,
     Number(i64),
-    // Boolean(bool),
 }

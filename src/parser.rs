@@ -8,6 +8,7 @@ pub struct Parser {
 }
 
 impl Parser {
+    // パース処理の入口
     pub fn parse(&mut self) -> anyhow::Result<Statements> {
         let mut stmts = Statements::new();
 
@@ -19,6 +20,7 @@ impl Parser {
         Ok(stmts)
     }
 
+    // ステートメント処理の入口
     fn parse_stmt(&mut self) -> anyhow::Result<Stmt> {
         let token = self.peek().unwrap();
         let stmt = match token {
@@ -43,9 +45,11 @@ impl Parser {
         Ok(stmt)
     }
 
+    // 変数宣言のステートメント処理
     fn parse_let_stmt(&mut self) -> anyhow::Result<Stmt> {
         self.next();
         let name = match self.next() {
+            // 予約語でなければこれを変数名とする
             Some(Token::Text(name)) => {
                 if self.is_keyword(&name) {
                     let msg = format!("変数名に予約語は使用できません。name = {}", name);
@@ -54,10 +58,12 @@ impl Parser {
 
                 name
             },
+            // 文字列出なかった場合はエラー
             Some(token) => {
                 let msg = format!("変数名が文字列ではありません。token = {:?}", token);
                 return Err(Error::msg(msg));
             },
+            // 次のトークンがそもそも文字列でない場合もエラー
             None => {
                 return Err(Error::msg("letの後に変数名がありません。"));
             }
@@ -68,6 +74,7 @@ impl Parser {
             return Err(Error::msg(msg));
         }
 
+        // 右辺の解析処理
         let expr = self.expr_add()?;
 
         if !self.consume(Token::Semicolon) {
@@ -77,6 +84,7 @@ impl Parser {
         Ok(Stmt::Let { name, expr })
     }
 
+    // 計算式のステートメント処理
     fn parse_expr_stmt(&mut self) -> anyhow::Result<Stmt> {
         let expr = self.parse_expr()?;
 
@@ -228,15 +236,17 @@ impl Parser {
         }
     }
 
+    // 関数、変数の解析処理
     fn expr_name(&mut self, name: String) -> anyhow::Result<Expr> {
         if self.peek() == Some(Token::LParen) {
             self.next();
             self.expr_func(name)
         } else {
-            Err(Error::msg(format!("現在は変数参照に対応していません。name = {}", name)))
+            Ok(Expr::Variable(name))
         }
     }
 
+    // 関数の解析処理
     fn expr_func(&mut self, name: String) -> anyhow::Result<Expr> {
         if !self.is_func(&name) {
             return Err(Error::msg(format!("存在しない関数です。name = {}", name)));
@@ -253,6 +263,7 @@ impl Parser {
     }
 
 
+    // nameが関数であるか比較
     fn is_func(&self, name: &str) -> bool {
         match name {
             "print" | "println" | "abs" => {
@@ -262,6 +273,7 @@ impl Parser {
         }
     }
 
+    // 関数のEnumを獲得
     fn get_func(&self, name: &str, args: Expr) -> Expr {
         match name {
             "print" => {

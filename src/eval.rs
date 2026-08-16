@@ -11,16 +11,18 @@ pub fn eval_all(stmts: Statements) -> anyhow::Result<Vec<Value>> {
         match stmt {
             // 式、関数の処理
             Stmt::Expr(expr) => {
-                let value = eval(expr.clone())?;
+                let value = eval(expr.clone(), &env)?;
                 values.push(value);
             },
             // 変数定義
             Stmt::Let {name, expr} => {
-                let value = eval(expr.clone())?;
+                // 右辺(初期値)を評価する
+                let value = eval(expr.clone(), &env)?;
                 if value == Value::Unit {
                     return Err(Error::msg("変数の値にUnitが出現しました。"));
                 }
 
+                // 変数としてenvに登録する
                 env.define(name.clone(), value);
                 values.push(Value::Unit);
             }
@@ -32,6 +34,56 @@ pub fn eval_all(stmts: Statements) -> anyhow::Result<Vec<Value>> {
     }
 
     Ok(values)
+}
+
+pub fn eval(expr: Expr, env: &Environment) -> anyhow::Result<Value> {
+    match expr {
+        Expr::Value(value) => {
+            match value {
+                Value::Number(num) => {
+                    Ok(Value::Number(num))
+                },
+                _ => {
+                    Err(Error::msg("Expr::ValueはValue::Number以外を想定していません。"))
+                },
+            }
+        },
+        Expr::Binary(bin) => {
+            Ok(bin.calc(&env)?)
+        },
+        Expr::Func(func) => {
+            match func {
+                BuiltinFunc::Print(expr) => {
+                    let r = eval(*expr, &env)?;
+                    let r = print(r)?;
+                    Ok(r)
+                },
+                BuiltinFunc::Println(expr) => {
+                    let r = eval(*expr, &env)?;
+                    let r = println(r)?;
+                    Ok(r)
+                },
+                BuiltinFunc::Abs(expr) => {
+                    let r = abs(eval(*expr, &env)?)?;
+                    Ok(r)
+                },
+            }
+        },
+        Expr::Unary(unary) => {
+            Ok(unary.calc(&env)?)
+        },
+        Expr::Variable(name) => {
+            match env.get(name.to_string()) {
+                Some(value) => {
+                    Ok(value.clone())
+                },
+                None => {
+                    let msg = format!("{} は変数として宣言されていません。", name);
+                    Err(Error::msg(msg))
+                }
+            }
+        },
+    }
 }
 
 pub fn print(value: Value) -> anyhow::Result<Value> {
@@ -64,48 +116,6 @@ pub fn abs(value: Value) -> anyhow::Result<Value> {
         },
         _ => {
             Err(Error::msg("数値以外が出現しました。Abs"))
-        },
-    }
-}
-
-pub fn eval(expr: Expr) -> anyhow::Result<Value> {
-    match expr {
-        // Expr::Expr(expr) => {
-        //     expr.eval()
-        // },
-        Expr::Value(value) => {
-            match value {
-                Value::Number(num) => {
-                    Ok(Value::Number(num))
-                },
-                _ => {
-                    Err(Error::msg("Expr::ValueはValue::Number以外を想定していません。"))
-                },
-            }
-        },
-        Expr::Binary(bin) => {
-            Ok(bin.calc()?)
-        },
-        Expr::Func(func) => {
-            match func {
-                BuiltinFunc::Print(expr) => {
-                    let r = eval(*expr)?;
-                    let r = print(r)?;
-                    Ok(r)
-                },
-                BuiltinFunc::Println(expr) => {
-                    let r = eval(*expr)?;
-                    let r = println(r)?;
-                    Ok(r)
-                },
-                BuiltinFunc::Abs(expr) => {
-                    let r = abs(eval(*expr)?)?;
-                    Ok(r)
-                },
-            }
-        },
-        Expr::Unary(unary) => {
-            Ok(unary.calc()?)
         },
     }
 }

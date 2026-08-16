@@ -521,4 +521,77 @@ mod tests {
             ]
         );
     }
+
+    // 変数のみを書いた場合
+    #[test]
+    fn normal_031() {
+        let tokens = lexer("let x = 10; x;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Number(10),
+            ]
+        );
+    }
+
+    // 変数と数値の計算
+    #[test]
+    fn normal_032() {
+        let tokens = lexer("let x = 10; x * 2;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Number(20),
+            ]
+        );
+    }
+
+    // 変数同士の計算
+    #[test]
+    fn normal_033() {
+        let tokens = lexer("let x = 10; let y = 3; x - y;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+                Value::Number(7),
+            ]
+        );
+    }
+
+    // 関数に変数を渡す
+    #[test]
+    fn normal_034() {
+        let tokens = lexer("let x = -35; abs(x);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Number(35),
+            ]
+        );
+    }
 }

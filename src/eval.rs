@@ -54,23 +54,23 @@ pub fn eval(expr: Expr, env: &Environment) -> anyhow::Result<Value> {
         Expr::Func(func) => {
             match func {
                 BuiltinFunc::Print(expr) => {
-                    let r = eval(*expr, &env)?;
+                    let r = eval(*expr, env)?;
                     let r = print(r)?;
                     Ok(r)
                 },
                 BuiltinFunc::Println(expr) => {
-                    let r = eval(*expr, &env)?;
+                    let r = eval(*expr, env)?;
                     let r = println(r)?;
                     Ok(r)
                 },
                 BuiltinFunc::Abs(expr) => {
-                    let r = abs(eval(*expr, &env)?)?;
+                    let r = abs(eval(*expr, env)?)?;
                     Ok(r)
                 },
             }
         },
         Expr::Unary(unary) => {
-            Ok(unary.calc(&env)?)
+            Ok(unary.calc(env)?)
         },
         Expr::Variable(name) => {
             match env.get(&name) {

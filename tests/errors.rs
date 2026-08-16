@@ -199,60 +199,6 @@ mod tests {
         }
     }
 
-    // 変数名だけを書いた
-    // ※このテスト異常にならないようになりました。
-    // #[test]
-    // fn error_012() {
-    //     let tokens = lexer("x;");
-    //     let mut parser = Parser::new(tokens);
-    //     let expr = parser.parse();
-    //
-    //     match expr {
-    //         Ok(_) => {
-    //             panic!("エラーになるべき入力が成功しました。");
-    //         },
-    //         Err(e) => {
-    //             assert_eq!(e.to_string(), "現在は変数参照に対応していません。name = x");
-    //         }
-    //     }
-    // }
-
-    // 変数と計算しようとした
-    // ※このテスト異常にならないようになりました。
-    // #[test]
-    // fn error_013() {
-    //     let tokens = lexer("x + 1;");
-    //     let mut parser = Parser::new(tokens);
-    //     let expr = parser.parse();
-    //
-    //     match expr {
-    //         Ok(_) => {
-    //             panic!("エラーになるべき入力が成功しました。");
-    //         },
-    //         Err(e) => {
-    //             assert_eq!(e.to_string(), "現在は変数参照に対応していません。name = x");
-    //         }
-    //     }
-    // }
-
-    // abs関数に変数名を指定した
-    // ※このテスト異常にならないようになりました。
-    // #[test]
-    // fn error_014() {
-    //     let tokens = lexer("abs(x);");
-    //     let mut parser = Parser::new(tokens);
-    //     let expr = parser.parse();
-    //
-    //     match expr {
-    //         Ok(_) => {
-    //             panic!("エラーになるべき入力が成功しました。");
-    //         },
-    //         Err(e) => {
-    //             assert_eq!(e.to_string(), "現在は変数参照に対応していません。name = x");
-    //         }
-    //     }
-    // }
-
     // 存在しない関数を指定した
     #[test]
     fn error_015() {

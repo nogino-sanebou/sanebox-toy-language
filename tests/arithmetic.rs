@@ -594,4 +594,42 @@ mod tests {
             ]
         );
     }
+
+    // 定義した変数を別な変数の宣言時に使用する
+    #[test]
+    fn normal_035() {
+        let tokens = lexer("let x = 10; let y = x + 5; y;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+                Value::Number(15),
+            ]
+        );
+    }
+
+    // 変数の再定義
+    #[test]
+    fn normal_036() {
+        let tokens = lexer("let x = 10; let x = 20; x;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+                Value::Number(20),
+            ]
+        );
+    }
 }

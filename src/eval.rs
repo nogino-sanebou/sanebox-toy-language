@@ -49,7 +49,7 @@ pub fn eval(expr: Expr, env: &Environment) -> anyhow::Result<Value> {
             }
         },
         Expr::Binary(bin) => {
-            Ok(bin.calc(&env)?)
+            Ok(bin.calc(env)?)
         },
         Expr::Func(func) => {
             match func {
@@ -73,7 +73,7 @@ pub fn eval(expr: Expr, env: &Environment) -> anyhow::Result<Value> {
             Ok(unary.calc(&env)?)
         },
         Expr::Variable(name) => {
-            match env.get(name.to_string()) {
+            match env.get(&name) {
                 Some(value) => {
                     Ok(value.clone())
                 },

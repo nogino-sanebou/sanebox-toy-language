@@ -64,8 +64,8 @@ impl Environment {
         self.list.insert(name, value);
     }
 
-    pub fn get(&self, name: String) -> Option<&Value> {
-        self.list.get(&name)
+    pub fn get(&self, name: &str) -> Option<&Value> {
+        self.list.get(name)
     }
 
     pub fn new() -> Self {
@@ -108,8 +108,8 @@ impl Binary {
     }
 
     pub fn calc(&self, env: &Environment) -> anyhow::Result<Value> {
-        let lhs = eval(*self.lhs.clone(), &env)?;
-        let rhs = eval(*self.rhs.clone(), &env)?;
+        let lhs = eval(*self.lhs.clone(), env)?;
+        let rhs = eval(*self.rhs.clone(), env)?;
 
         match &self.op {
             Op::Add => {
@@ -224,7 +224,7 @@ impl Unary {
     }
 
     pub fn calc(&self, env: &Environment) -> anyhow::Result<Value> {
-        let value = eval(*self.expr.clone(), &env)?;
+        let value = eval(*self.expr.clone(), env)?;
 
         match self.op {
             UnaryOp::Neg => {

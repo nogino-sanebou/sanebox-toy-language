@@ -1017,4 +1017,55 @@ mod tests {
             ]
         );
     }
+
+    // 括弧で括った場合「(数値 < 数値)」の形
+    #[test]
+    fn normal_059() {
+        let tokens = lexer("(10 < 20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 括弧で括った場合「(数値 > 数値)」の形
+    #[test]
+    fn normal_060() {
+        let tokens = lexer("(20 > 10);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 括弧で括った場合「(数値 == 数値)」の形
+    #[test]
+    fn normal_061() {
+        let tokens = lexer("(20 == 20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
 }

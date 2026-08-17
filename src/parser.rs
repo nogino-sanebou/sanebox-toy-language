@@ -309,7 +309,7 @@ impl Parser {
             return Err(Error::msg(format!("存在しない関数です。name = {}", name)));
         }
 
-        let arg = self.expr_add()?;
+        let arg = self.parse_expr()?;
 
         if !self.consume(Token::RParen) {
             let msg = format!("関数名が)で閉じられていません。token = {:?}", self.peek());

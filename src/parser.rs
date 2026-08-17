@@ -86,7 +86,7 @@ impl Parser {
 
     // 計算式のステートメント処理
     fn parse_expr_stmt(&mut self) -> anyhow::Result<Stmt> {
-        let expr = self.parse_expr()?;
+        let expr = self.expr_compare()?;
 
         if !self.consume(Token::Semicolon) {
             return Err(Error::msg("式の末尾がセミコロンでありません。"));
@@ -107,8 +107,55 @@ impl Parser {
         }
     }
 
-    fn parse_expr(&mut self) -> anyhow::Result<Expr> {
-        self.expr_add()
+    // 比較・bool処理
+    fn expr_compare(&mut self) -> anyhow::Result<Expr> {
+        let mut left = self.expr_add()?;
+
+        while let Some(token) = self.peek() {
+            match token {
+                Token::Less => {
+                    self.next();
+
+                    let right = self.expr_add()?;
+
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::Less
+                    );
+                    left = Expr::Binary(binary);
+                },
+                Token::Greater => {
+                    self.next();
+
+                    let right = self.expr_add()?;
+
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::Greater
+                    );
+                    left = Expr::Binary(binary);
+                },
+                Token::EqualEqual => {
+                    self.next();
+
+                    let right = self.expr_add()?;
+
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::Equal
+                    );
+                    left = Expr::Binary(binary);
+                },
+                _ => {
+                    break;
+                }
+            }
+        }
+
+        Ok(left)
     }
 
     // 加算・減算処理
@@ -228,11 +275,12 @@ impl Parser {
                     Ok(expr)
                 },
                 _ => {
-                    Err(Error::msg(format!("予期せぬ値です。expr_primary = {:?}", token)))
+                    let msg = format!("expr_primaryで予期せぬトークンが出現しました。token = {:?}", token);
+                    Err(Error::msg(msg))
                 },
             }
         } else {
-            Err(Error::msg("予期せぬ値です。expr_primary"))
+            Err(Error::msg("expr_primaryでトークンを取得できませんでした。"))
         }
     }
 

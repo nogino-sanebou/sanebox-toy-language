@@ -9,6 +9,9 @@ pub enum Token {
     Asterisk,
     Slash,
     Semicolon,
+    Less,
+    Greater,
+    EqualEqual,
     Equal,
 }
 
@@ -47,9 +50,25 @@ pub fn lexer(code: &str) -> Vec<Token> {
                 push_literal(&mut tokens, &mut token);
                 tokens.push(Token::Semicolon);
             },
+            '<' => {
+                push_literal(&mut tokens, &mut token);
+                tokens.push(Token::Less);
+            },
+            '>' => {
+                push_literal(&mut tokens, &mut token);
+                tokens.push(Token::Greater);
+            },
             '=' => {
                 push_literal(&mut  tokens, &mut token);
-                tokens.push(Token::Equal);
+                // 次の文字も'='であった場合、EqualEqualにする
+                if *chars.peek().unwrap() == '=' {
+                    tokens.push(Token::EqualEqual);
+                    chars.next();
+                }
+                // 違った場合はEqualにする
+                else {
+                    tokens.push(Token::Equal);
+                }
             }
             c if c.is_whitespace() => {
                 push_literal(&mut tokens, &mut token);
@@ -65,6 +84,13 @@ pub fn lexer(code: &str) -> Vec<Token> {
     tokens
 }
 
+fn push_literal(tokens: &mut Vec<Token>, token: &mut String) {
+    if !token.is_empty() {
+        tokens.push(convert_literal(&token));
+        token.clear();
+    }
+}
+
 fn convert_literal(token: &str) -> Token {
     if let Ok(num) = token.parse::<i64>() {
         Token::Number(num)
@@ -73,12 +99,5 @@ fn convert_literal(token: &str) -> Token {
             panic!("想定外の空文字が出現しました。")
         }
         Token::Text(token.to_string())
-    }
-}
-
-fn push_literal(tokens: &mut Vec<Token>, token: &mut String) {
-    if !token.is_empty() {
-        tokens.push(convert_literal(&token));
-        token.clear();
     }
 }

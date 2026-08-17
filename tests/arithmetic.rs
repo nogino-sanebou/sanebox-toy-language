@@ -632,4 +632,370 @@ mod tests {
             ]
         );
     }
+
+    // 数値 < 数値 (trueパターン)
+    #[test]
+    fn normal_037() {
+        let tokens = lexer("10 < 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 < 数値 (falseパターン)
+    #[test]
+    fn normal_038() {
+        let tokens = lexer("20 < 10;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // (数値) < (数値) (括弧パターン)
+    #[test]
+    fn normal_039() {
+        let tokens = lexer("(1 + 2) < (3 - 4);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // 関数 < 数値
+    #[test]
+    fn normal_040() {
+        let tokens = lexer("abs(-10) < 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 < 関数
+    #[test]
+    fn normal_041() {
+        let tokens = lexer("10 < abs(-20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 < 数値
+    #[test]
+    fn normal_042() {
+        let tokens = lexer("let x = 10; x < 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 < 変数
+    #[test]
+    fn normal_043() {
+        let tokens = lexer("let x = 10; let y = 20; x < y;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 > 数値 (trueパターン)
+    #[test]
+    fn normal_044() {
+        let tokens = lexer("20 > 10;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 > 数値 (falseパターン)
+    #[test]
+    fn normal_045() {
+        let tokens = lexer("10 > 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // (数値) > (数値) (括弧パターン)
+    #[test]
+    fn normal_046() {
+        let tokens = lexer("(1 + 2) > (3 * 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // 関数 > 数値
+    #[test]
+    fn normal_047() {
+        let tokens = lexer("abs(-30) > 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 > 関数
+    #[test]
+    fn normal_048() {
+        let tokens = lexer("30 > abs(-20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 > 数値
+    #[test]
+    fn normal_049() {
+        let tokens = lexer("let x = 20; x > 10;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 > 変数
+    #[test]
+    fn normal_050() {
+        let tokens = lexer("let x = 20; let y = 10; x > y;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 == 数値 (trueパターン)
+    #[test]
+    fn normal_051() {
+        let tokens = lexer("10 == 10;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 == 数値 (falseパターン)
+    #[test]
+    fn normal_052() {
+        let tokens = lexer("10 == 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // (数値) == (数値) (括弧パターン)
+    #[test]
+    fn normal_053() {
+        let tokens = lexer("(4 + 5) == (3 * 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 関数 == 数値
+    #[test]
+    fn normal_054() {
+        let tokens = lexer("abs(-30) == 30;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 == 関数
+    #[test]
+    fn normal_055() {
+        let tokens = lexer("20 == abs(-20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 == 数値
+    #[test]
+    fn normal_056() {
+        let tokens = lexer("let x = 20; x == 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 == 変数
+    #[test]
+    fn normal_057() {
+        let tokens = lexer("let x = 20; let y = 20; x == y;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
 }

@@ -124,6 +124,15 @@ impl Binary {
             Op::Div => {
                 Binary::div(lhs, rhs)
             },
+            Op::Less => {
+                Binary::less(lhs, rhs)
+            },
+            Op::Greater => {
+                Binary::greater(lhs, rhs)
+            },
+            Op::Equal => {
+                Binary::equal(lhs, rhs)
+            },
         }
     }
 
@@ -131,13 +140,13 @@ impl Binary {
         let lhs = if let Value::Number(num) = lhs {
             num
         } else {
-            return Err(Error::msg("想定外のvalue add-lhs"));
+            return Err(Error::msg("addの左辺に数値以外が出現しました。"));
         };
 
         let rhs = if let Value::Number(num) = rhs {
             num
         } else {
-            return Err(Error::msg("想定外のvalue add-rhs"));
+            return Err(Error::msg("addの右辺に数値以外が出現しました。"));
         };
 
         Ok(Value::Number(lhs + rhs))
@@ -147,13 +156,13 @@ impl Binary {
         let lhs = if let Value::Number(num) = lhs {
             num
         } else {
-            return Err(Error::msg("想定外のvalue sub-lhs"));
+            return Err(Error::msg("subの左辺に数値以外が出現しました。"));
         };
 
         let rhs = if let Value::Number(num) = rhs {
             num
         } else {
-            return Err(Error::msg("想定外のvalue sub-rhs"));
+            return Err(Error::msg("subの右辺に数値以外が出現しました。"));
         };
 
         Ok(Value::Number(lhs - rhs))
@@ -163,13 +172,13 @@ impl Binary {
         let lhs = if let Value::Number(num) = lhs {
             num
         } else {
-            return Err(Error::msg("想定外のvalue mul-lhs"));
+            return Err(Error::msg("mulの左辺に数値以外が出現しました。"));
         };
 
         let rhs = if let Value::Number(num) = rhs {
             num
         } else {
-            return Err(Error::msg("想定外のvalue mul-rhs"));
+            return Err(Error::msg("mulの右辺に数値以外が出現しました。"));
         };
 
         Ok(Value::Number(lhs * rhs))
@@ -179,13 +188,13 @@ impl Binary {
         let lhs = if let Value::Number(num) = lhs {
             num
         } else {
-            return Err(Error::msg("想定外のvalue div-lhs"));
+            return Err(Error::msg("divの左辺に数値以外が出現しました。"));
         };
 
         let rhs = if let Value::Number(num) = rhs {
             num
         } else {
-            return Err(Error::msg("想定外のvalue div-rhs"));
+            return Err(Error::msg("divの右辺に数値以外が出現しました。"));
         };
 
         if rhs == 0 {
@@ -193,6 +202,54 @@ impl Binary {
         }
 
         Ok(Value::Number(lhs / rhs))
+    }
+
+    fn less(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Number(num) = lhs {
+            num
+        } else {
+            return Err(Error::msg("lessの左辺に数値以外が出現しました。"));
+        };
+
+        let rhs = if let Value::Number(num) = rhs {
+            num
+        } else {
+            return Err(Error::msg("lessの右辺に数値以外が出現しました。"));
+        };
+
+        Ok(Value::Boolean(lhs < rhs))
+    }
+
+    fn greater(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Number(num) = lhs {
+            num
+        } else {
+            return Err(Error::msg("greaterの左辺に数値以外が出現しました。"));
+        };
+
+        let rhs = if let Value::Number(num) = rhs {
+            num
+        } else {
+            return Err(Error::msg("greaterの右辺に数値以外が出現しました。"));
+        };
+
+        Ok(Value::Boolean(lhs > rhs))
+    }
+
+    fn equal(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Number(num) = lhs {
+            num
+        } else {
+            return Err(Error::msg("equalの左辺に数値以外が出現しました。"));
+        };
+
+        let rhs = if let Value::Number(num) = rhs {
+            num
+        } else {
+            return Err(Error::msg("equalの右辺に数値以外が出現しました。"));
+        };
+
+        Ok(Value::Boolean(lhs == rhs))
     }
 }
 
@@ -202,6 +259,9 @@ pub enum Op {
     Sub,
     Mul,
     Div,
+    Less,
+    Greater,
+    Equal,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -245,4 +305,5 @@ impl Unary {
 pub enum Value {
     Unit,
     Number(i64),
+    Boolean(bool),
 }

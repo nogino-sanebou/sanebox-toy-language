@@ -137,7 +137,7 @@ mod tests {
                 panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
-                assert_eq!(e.to_string(), "予期せぬ値です。expr_primary = Semicolon");
+                assert_eq!(e.to_string(), "expr_primaryで予期せぬトークンが出現しました。token = Semicolon");
             },
         }
     }
@@ -156,7 +156,7 @@ mod tests {
                 panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
-                assert_eq!(e.to_string(), "想定外のvalue add-rhs");
+                assert_eq!(e.to_string(), "addの右辺に数値以外が出現しました。");
             }
         }
     }
@@ -175,7 +175,7 @@ mod tests {
                 panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
-                assert_eq!(e.to_string(), "想定外のvalue add-lhs");
+                assert_eq!(e.to_string(), "addの左辺に数値以外が出現しました。");
             }
         }
     }
@@ -228,7 +228,7 @@ mod tests {
                 panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
-                assert_eq!(e.to_string(), "予期せぬ値です。expr_primary = Semicolon");
+                assert_eq!(e.to_string(), "expr_primaryで予期せぬトークンが出現しました。token = Semicolon");
             }
         }
     }
@@ -354,6 +354,217 @@ mod tests {
             },
             Err(e) => {
                 assert_eq!(e.to_string(), "x は変数として宣言されていません。");
+            }
+        }
+    }
+
+
+    // 右辺が数値でない
+    #[test]
+    fn error_024() {
+        let tokens = lexer("10 < println(10); ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "lessの右辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 左辺が数値でない
+    #[test]
+    fn error_025() {
+        let tokens = lexer("println(10) < 10; ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "lessの左辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 比較演算子が連続している
+    #[test]
+    fn error_026() {
+        let tokens = lexer("10 <> 10; ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "expr_primaryで予期せぬトークンが出現しました。token = Greater");
+            }
+        }
+    }
+
+    // 次のトークンがマイナスでない算術演算子
+    #[test]
+    fn error_027() {
+        let tokens = lexer("10 < + 10; ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "expr_primaryで予期せぬトークンが出現しました。token = Plus");
+            }
+        }
+    }
+
+    // 右辺が数値でない
+    #[test]
+    fn error_028() {
+        let tokens = lexer("10 > println(10); ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "greaterの右辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 左辺が数値でない
+    #[test]
+    fn error_029() {
+        let tokens = lexer("println(10) > 10; ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "greaterの左辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 比較演算子が連続している
+    #[test]
+    fn error_30() {
+        let tokens = lexer("10 >< 10; ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "expr_primaryで予期せぬトークンが出現しました。token = Less");
+            }
+        }
+    }
+
+    // 次のトークンがマイナスでない算術演算子
+    #[test]
+    fn error_031() {
+        let tokens = lexer("10 > + 10; ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "expr_primaryで予期せぬトークンが出現しました。token = Plus");
+            }
+        }
+    }
+
+    // 右辺が数値でない
+    #[test]
+    fn error_032() {
+        let tokens = lexer("10 == println(10); ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "equalの右辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 左辺が数値でない
+    #[test]
+    fn error_033() {
+        let tokens = lexer("println(10) == 10; ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "equalの左辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 比較演算子が連続している
+    #[test]
+    fn error_34() {
+        let tokens = lexer("10 ==== 10; ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "expr_primaryで予期せぬトークンが出現しました。token = EqualEqual");
+            }
+        }
+    }
+
+    // 次のトークンがマイナスでない算術演算子
+    #[test]
+    fn error_035() {
+        let tokens = lexer("10 == + 10; ");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "expr_primaryで予期せぬトークンが出現しました。token = Plus");
             }
         }
     }

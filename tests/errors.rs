@@ -568,4 +568,39 @@ mod tests {
             }
         }
     }
+
+    // let 変数名の次が無い場合
+    #[test]
+    fn error_036() {
+        let tokens = lexer("let x =");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "letの初期値に値が存在しませんでした。");
+            }
+        }
+    }
+
+    // 数値 < 数値 < 数値のパターン
+    #[test]
+    fn error_037() {
+        let tokens = lexer("10 < 20 < 30;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "lessの左辺に数値以外が出現しました。");
+            }
+        }
+    }
 }

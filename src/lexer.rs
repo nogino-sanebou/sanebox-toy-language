@@ -61,7 +61,7 @@ pub fn lexer(code: &str) -> Vec<Token> {
             '=' => {
                 push_literal(&mut  tokens, &mut token);
                 // 次の文字も'='であった場合、EqualEqualにする
-                if *chars.peek().unwrap() == '=' {
+                if chars.peek() == Some(&'=') {
                     tokens.push(Token::EqualEqual);
                     chars.next();
                 }

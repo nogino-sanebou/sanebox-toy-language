@@ -75,7 +75,11 @@ impl Parser {
         }
 
         // 右辺の解析処理
-        let expr = self.expr_add()?;
+        if self.peek().is_none() {
+            return Err(Error::msg("letの初期値に値が存在しませんでした。"));
+        }
+
+        let expr = self.parse_expr()?;
 
         if !self.consume(Token::Semicolon) {
             return Err(Error::msg("式の末尾がセミコロンでありません。"));
@@ -86,7 +90,7 @@ impl Parser {
 
     // 計算式のステートメント処理
     fn parse_expr_stmt(&mut self) -> anyhow::Result<Stmt> {
-        let expr = self.expr_compare()?;
+        let expr = self.parse_expr()?;
 
         if !self.consume(Token::Semicolon) {
             return Err(Error::msg("式の末尾がセミコロンでありません。"));
@@ -105,6 +109,11 @@ impl Parser {
                 false
             }
         }
+    }
+
+    // 計算式の処理
+    fn parse_expr(&mut self) -> anyhow::Result<Expr> {
+        self.expr_compare()
     }
 
     // 比較・bool処理
@@ -268,7 +277,7 @@ impl Parser {
                     Ok(Expr::Value(num))
                 },
                 Token::LParen => {
-                    let expr = self.expr_add()?;
+                    let expr = self.parse_expr()?;
                     if !self.consume(Token::RParen) {
                         return Err(Error::msg("対応する)が見つかりませんでした。"));
                     }

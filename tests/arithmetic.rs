@@ -998,4 +998,23 @@ mod tests {
             ]
         );
     }
+
+
+    // boolean(比較結果)を変数の初期値にする
+    #[test]
+    fn normal_058() {
+        let tokens = lexer("let x = 20 < 30; x;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
 }

@@ -603,4 +603,74 @@ mod tests {
             }
         }
     }
+
+    // 数値 < = 数値のパターン
+    #[test]
+    fn error_038() {
+        let tokens = lexer("10 < = 20;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "expr_primaryで予期せぬトークンが出現しました。token = Equal");
+            }
+        }
+    }
+
+    // 数値 > = 数値のパターン
+    #[test]
+    fn error_039() {
+        let tokens = lexer("10 > = 20;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "expr_primaryで予期せぬトークンが出現しました。token = Equal");
+            }
+        }
+    }
+
+    // 数値 ! = 数値のパターン
+    // !(boolean); を実装するまでエラー内容は仮置きで「式の末尾がセミコロンでありません。」にする
+    #[test]
+    fn error_040() {
+        let tokens = lexer("10 ! = 20;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "式の末尾がセミコロンでありません。");
+            }
+        }
+    }
+
+    // 数値 = = 数値のパターン
+    // 変数 = 数値; を実装するまでエラー内容は仮置きで「式の末尾がセミコロンでありません。」にする
+    #[test]
+    fn error_041() {
+        let tokens = lexer("10 = = 20;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "式の末尾がセミコロンでありません。");
+            }
+        }
+    }
 }

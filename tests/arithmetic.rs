@@ -1068,4 +1068,478 @@ mod tests {
             ]
         );
     }
+
+    // 数値 <= 数値 (trueパターン)
+    #[test]
+    fn normal_062() {
+        let tokens = lexer("10 <= 10;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 <= 数値 (falseパターン)
+    #[test]
+    fn normal_063() {
+        let tokens = lexer("20 <= 10;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // (数値) <= (数値) (括弧パターン)
+    #[test]
+    fn normal_064() {
+        let tokens = lexer("(4 + 5) <= (4 * 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 関数 <= 数値
+    #[test]
+    fn normal_065() {
+        let tokens = lexer("abs(-30) <= 30;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 <= 関数
+    #[test]
+    fn normal_066() {
+        let tokens = lexer("10 <= abs(-20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 <= 数値
+    #[test]
+    fn normal_067() {
+        let tokens = lexer("let x = 20; x <= 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 <= 変数
+    #[test]
+    fn normal_068() {
+        let tokens = lexer("let x = 20; let y = 50; x <= y;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+
+    // boolean(比較結果)を変数の初期値にする
+    #[test]
+    fn normal_069() {
+        let tokens = lexer("let x = 20 <= 30; x;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 括弧で括った場合「(数値 <= 数値)」の形
+    #[test]
+    fn normal_070() {
+        let tokens = lexer("(10 <= 20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 >= 数値 (trueパターン)
+    #[test]
+    fn normal_071() {
+        let tokens = lexer("10 >= 10;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 <= 数値 (falseパターン)
+    #[test]
+    fn normal_072() {
+        let tokens = lexer("10 >= 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // (数値) >= (数値) (括弧パターン)
+    #[test]
+    fn normal_073() {
+        let tokens = lexer("(4 + 5) >= (2 * 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 関数 >= 数値
+    #[test]
+    fn normal_074() {
+        let tokens = lexer("abs(-30) >= 30;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 >= 関数
+    #[test]
+    fn normal_075() {
+        let tokens = lexer("30 >= abs(-20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 >= 数値
+    #[test]
+    fn normal_076() {
+        let tokens = lexer("let x = 20; x >= 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 >= 変数
+    #[test]
+    fn normal_077() {
+        let tokens = lexer("let x = 60; let y = 50; x >= y;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+
+    // boolean(比較結果)を変数の初期値にする
+    #[test]
+    fn normal_078() {
+        let tokens = lexer("let x = 50 >= 30; x;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 括弧で括った場合「(数値 >= 数値)」の形
+    #[test]
+    fn normal_079() {
+        let tokens = lexer("(20 >= 20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 != 数値 (trueパターン)
+    #[test]
+    fn normal_080() {
+        let tokens = lexer("20 != 10;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 != 数値 (falseパターン)
+    #[test]
+    fn normal_081() {
+        let tokens = lexer("10 != 10;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // (数値) != (数値) (括弧パターン)
+    #[test]
+    fn normal_082() {
+        let tokens = lexer("(4 + 5) != (2 * 3);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 関数 != 数値
+    #[test]
+    fn normal_083() {
+        let tokens = lexer("abs(-20) != 30;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数値 != 関数
+    #[test]
+    fn normal_084() {
+        let tokens = lexer("30 != abs(-20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 != 数値
+    #[test]
+    fn normal_085() {
+        let tokens = lexer("let x = 30; x != 20;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 変数 != 変数
+    #[test]
+    fn normal_086() {
+        let tokens = lexer("let x = 60; let y = 50; x != y;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+
+    // boolean(比較結果)を変数の初期値にする
+    #[test]
+    fn normal_087() {
+        let tokens = lexer("let x = 50 != 30; x;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 括弧で括った場合「(数値 != 数値)」の形
+    #[test]
+    fn normal_088() {
+        let tokens = lexer("(30 != 20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
 }

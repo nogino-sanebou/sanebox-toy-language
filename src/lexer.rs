@@ -10,9 +10,12 @@ pub enum Token {
     Slash,
     Semicolon,
     Less,
+    LessEqual,
     Greater,
+    GreaterEqual,
     EqualEqual,
     Equal,
+    ExclamationEqual
 }
 
 pub fn lexer(code: &str) -> Vec<Token> {
@@ -52,11 +55,27 @@ pub fn lexer(code: &str) -> Vec<Token> {
             },
             '<' => {
                 push_literal(&mut tokens, &mut token);
-                tokens.push(Token::Less);
+                // 次の文字が'='であった場合、LessEqualにする
+                if chars.peek() == Some(&'=') {
+                    tokens.push(Token::LessEqual);
+                    chars.next();
+                }
+                // 違った場合はLessにする
+                else {
+                    tokens.push(Token::Less);
+                }
             },
             '>' => {
                 push_literal(&mut tokens, &mut token);
-                tokens.push(Token::Greater);
+                // 次の文字が'='であった場合、GreaterEqualにする
+                if chars.peek() == Some(&'=') {
+                    tokens.push(Token::GreaterEqual);
+                    chars.next();
+                }
+                // 違った場合はGreaterにする
+                else {
+                    tokens.push(Token::Greater);
+                }
             },
             '=' => {
                 push_literal(&mut  tokens, &mut token);
@@ -69,6 +88,15 @@ pub fn lexer(code: &str) -> Vec<Token> {
                 else {
                     tokens.push(Token::Equal);
                 }
+            }
+            '!' => {
+                // 次の文字が'='であった場合、Equalにする
+                if chars.peek() == Some(&'=') {
+                    push_literal(&mut  tokens, &mut token);
+                    tokens.push(Token::ExclamationEqual);
+                    chars.next();
+                }
+                // 違った場合は何もせずに処理を続ける
             }
             c if c.is_whitespace() => {
                 push_literal(&mut tokens, &mut token);

@@ -91,6 +91,25 @@ pub enum BuiltinFunc {
     Abs(Box<Expr>),
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum Op {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+    Equal,
+    NotEqual,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub enum UnaryOp {
+    Neg,
+}
+
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Binary {
     lhs: Box<Expr>,
@@ -127,12 +146,21 @@ impl Binary {
             Op::Less => {
                 Binary::less(lhs, rhs)
             },
+            Op::LessEqual => {
+                Binary::less_equal(lhs, rhs)
+            },
             Op::Greater => {
                 Binary::greater(lhs, rhs)
+            },
+            Op::GreaterEqual => {
+                Binary::greater_equal(lhs, rhs)
             },
             Op::Equal => {
                 Binary::equal(lhs, rhs)
             },
+            Op::NotEqual => {
+                Binary::not_equal(lhs, rhs)
+            }
         }
     }
 
@@ -220,6 +248,22 @@ impl Binary {
         Ok(Value::Boolean(lhs < rhs))
     }
 
+    fn less_equal(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Number(num) = lhs {
+            num
+        } else {
+            return Err(Error::msg("less_equalの左辺に数値以外が出現しました。"));
+        };
+
+        let rhs = if let Value::Number(num) = rhs {
+            num
+        } else {
+            return Err(Error::msg("less_equalの右辺に数値以外が出現しました。"));
+        };
+
+        Ok(Value::Boolean(lhs <= rhs))
+    }
+
     fn greater(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
         let lhs = if let Value::Number(num) = lhs {
             num
@@ -234,6 +278,22 @@ impl Binary {
         };
 
         Ok(Value::Boolean(lhs > rhs))
+    }
+
+    fn greater_equal(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Number(num) = lhs {
+            num
+        } else {
+            return Err(Error::msg("greater_equalの左辺に数値以外が出現しました。"));
+        };
+
+        let rhs = if let Value::Number(num) = rhs {
+            num
+        } else {
+            return Err(Error::msg("greater_equalの右辺に数値以外が出現しました。"));
+        };
+
+        Ok(Value::Boolean(lhs >= rhs))
     }
 
     fn equal(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
@@ -251,22 +311,22 @@ impl Binary {
 
         Ok(Value::Boolean(lhs == rhs))
     }
-}
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub enum Op {
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Less,
-    Greater,
-    Equal,
-}
+    fn not_equal(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Number(num) = lhs {
+            num
+        } else {
+            return Err(Error::msg("not_equalの左辺に数値以外が出現しました。"));
+        };
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub enum UnaryOp {
-    Neg,
+        let rhs = if let Value::Number(num) = rhs {
+            num
+        } else {
+            return Err(Error::msg("not_equalの右辺に数値以外が出現しました。"));
+        };
+
+        Ok(Value::Boolean(lhs != rhs))
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]

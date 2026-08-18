@@ -134,6 +134,18 @@ impl Parser {
                     );
                     left = Expr::Binary(binary);
                 },
+                Token::LessEqual => {
+                    self.next();
+
+                    let right = self.expr_add()?;
+
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::LessEqual
+                    );
+                    left = Expr::Binary(binary);
+                },
                 Token::Greater => {
                     self.next();
 
@@ -143,6 +155,18 @@ impl Parser {
                         Box::new(left),
                         Box::new(right),
                         Op::Greater
+                    );
+                    left = Expr::Binary(binary);
+                },
+                Token::GreaterEqual => {
+                    self.next();
+
+                    let right = self.expr_add()?;
+
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::GreaterEqual
                     );
                     left = Expr::Binary(binary);
                 },
@@ -158,9 +182,21 @@ impl Parser {
                     );
                     left = Expr::Binary(binary);
                 },
+                Token::ExclamationEqual => {
+                    self.next();
+
+                    let right = self.expr_add()?;
+
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::NotEqual
+                    );
+                    left = Expr::Binary(binary);
+                },
                 _ => {
                     break;
-                }
+                },
             }
         }
 

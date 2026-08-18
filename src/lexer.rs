@@ -15,7 +15,8 @@ pub enum Token {
     GreaterEqual,
     EqualEqual,
     Equal,
-    ExclamationEqual
+    Exclamation,
+    ExclamationEqual,
 }
 
 pub fn lexer(code: &str) -> Vec<Token> {
@@ -90,13 +91,17 @@ pub fn lexer(code: &str) -> Vec<Token> {
                 }
             }
             '!' => {
-                // 次の文字が'='であった場合、Equalにする
+                push_literal(&mut  tokens, &mut token);
+                // 次の文字が'='であった場合、ExclamationEqualにする
                 if chars.peek() == Some(&'=') {
                     push_literal(&mut  tokens, &mut token);
                     tokens.push(Token::ExclamationEqual);
                     chars.next();
                 }
-                // 違った場合は何もせずに処理を続ける
+                // 違った場合はExclamationにする
+                else {
+                    tokens.push(Token::Exclamation);
+                }
             }
             c if c.is_whitespace() => {
                 push_literal(&mut tokens, &mut token);

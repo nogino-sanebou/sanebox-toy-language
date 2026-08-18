@@ -673,4 +673,112 @@ mod tests {
             }
         }
     }
+
+    // 数値 <= 戻り値がUnit型の関数
+    #[test]
+    fn error_042() {
+        let tokens = lexer("10 <= println(1 + 2);");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "less_equalの右辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 戻り値がUnit型の関数 <= 数値
+    #[test]
+    fn error_043() {
+        let tokens = lexer("println(1 + 2) <= 10;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "less_equalの左辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 数値 >= 戻り値がUnit型の関数
+    #[test]
+    fn error_044() {
+        let tokens = lexer("10 >= println(1 + 2);");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "greater_equalの右辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 戻り値がUnit型の関数 >= 数値
+    #[test]
+    fn error_045() {
+        let tokens = lexer("println(1 + 2) >= 10;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "greater_equalの左辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 数値 != 戻り値がUnit型の関数
+    #[test]
+    fn error_046() {
+        let tokens = lexer("10 != println(1 + 2);");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "not_equalの右辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 戻り値がUnit型の関数 != 数値
+    #[test]
+    fn error_047() {
+        let tokens = lexer("println(1 + 2) != 10;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "not_equalの左辺に数値以外が出現しました。");
+            }
+        }
+    }
 }

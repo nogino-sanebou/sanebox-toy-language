@@ -94,7 +94,6 @@ pub fn lexer(code: &str) -> Vec<Token> {
                 push_literal(&mut  tokens, &mut token);
                 // 次の文字が'='であった場合、ExclamationEqualにする
                 if chars.peek() == Some(&'=') {
-                    push_literal(&mut  tokens, &mut token);
                     tokens.push(Token::ExclamationEqual);
                     chars.next();
                 }

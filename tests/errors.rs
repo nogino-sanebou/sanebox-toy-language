@@ -835,4 +835,38 @@ mod tests {
             }
         }
     }
+
+    // 変数名にtrueを指定した場合
+    #[test]
+    fn error_051() {
+        let tokens = lexer("let true = 10;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "変数名に予約語は使用できません。name = true");
+            }
+        }
+    }
+
+    // 変数名にfalseを指定した場合
+    #[test]
+    fn error_052() {
+        let tokens = lexer("let false = 10;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse();
+
+        match stmt {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "変数名に予約語は使用できません。name = false");
+            }
+        }
+    }
 }

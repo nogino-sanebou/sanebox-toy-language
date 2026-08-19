@@ -1581,4 +1581,22 @@ mod tests {
             ]
         );
     }
+
+    // true, falseを直接指定したパターン
+    #[test]
+    fn normal_091() {
+        let tokens = lexer("true; false;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+                Value::Boolean(false),
+            ]
+        );
+    }
 }

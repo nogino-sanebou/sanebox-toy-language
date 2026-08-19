@@ -1542,4 +1542,43 @@ mod tests {
             ]
         );
     }
+
+
+    // print(boolean), println(boolean)のパターン
+    #[test]
+    fn normal_089() {
+        let tokens = lexer("print(true); println(false);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+            ]
+        );
+    }
+
+    // 変数に設定したパターン
+    #[test]
+    fn normal_090() {
+        let tokens = lexer("let x = true; x; let x = false; x;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+                Value::Unit,
+                Value::Boolean(false),
+            ]
+        );
+    }
 }

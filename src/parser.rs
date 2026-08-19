@@ -102,7 +102,7 @@ impl Parser {
     // 予約語であるか確認
     fn is_keyword(&self, text: &String) -> bool {
         match text.as_str() {
-            "let" => {
+            "let" | "true" | "false" => {
                 true
             }
             _ => {
@@ -329,13 +329,23 @@ impl Parser {
         }
     }
 
-    // 関数、変数の解析処理
+    // 関数、変数、booleanの解析処理
     fn expr_name(&mut self, name: String) -> anyhow::Result<Expr> {
         if self.peek() == Some(Token::LParen) {
             self.next();
             self.expr_func(name)
         } else {
-            Ok(Expr::Variable(name))
+            match name.as_str() {
+                "true" => {
+                    Ok(Expr::Value(Value::Boolean(true)))
+                },
+                "false" => {
+                    Ok(Expr::Value(Value::Boolean(false)))
+                },
+                _ => {
+                    Ok(Expr::Variable(name))
+                }
+            }
         }
     }
 

@@ -43,8 +43,11 @@ pub fn eval(expr: Expr, env: &Environment) -> anyhow::Result<Value> {
                 Value::Number(num) => {
                     Ok(Value::Number(num))
                 },
+                Value::Boolean(b) => {
+                    Ok(Value::Boolean(b))
+                },
                 _ => {
-                    Err(Error::msg("Expr::ValueはValue::Number以外を想定していません。"))
+                    Err(Error::msg("Expr::ValueにValue::Unitが来ることを想定していません。"))
                 },
             }
         },
@@ -92,8 +95,12 @@ pub fn print(value: Value) -> anyhow::Result<Value> {
             print!("{}", num);
             Ok(Value::Unit)
         },
+        Value::Boolean(b) => {
+            print!("{}", b);
+            Ok(Value::Unit)
+        },
         _ => {
-            Err(Error::msg("想定外のvalue-print"))
+            Err(Error::msg("Expr::ValueにValue::Unitが来ることを想定していません。"))
         },
     }
 }
@@ -115,7 +122,7 @@ pub fn abs(value: Value) -> anyhow::Result<Value> {
             Ok(Value::Number(num))
         },
         _ => {
-            Err(Error::msg("数値以外が出現しました。Abs"))
+            Err(Error::msg("abs関数に数値以外を指定しました。"))
         },
     }
 }

@@ -194,7 +194,7 @@ mod tests {
                 panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
-                assert_eq!(e.to_string(), "数値以外が出現しました。Abs");
+                assert_eq!(e.to_string(), "abs関数に数値以外を指定しました。");
             }
         }
     }
@@ -778,6 +778,60 @@ mod tests {
             },
             Err(e) => {
                 assert_eq!(e.to_string(), "not_equalの左辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // abs(boolean)のパターン
+    #[test]
+    fn error_048() {
+        let tokens = lexer("abs(true);");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "abs関数に数値以外を指定しました。");
+            }
+        }
+    }
+
+    // 計算式にbooleanのパターン
+    #[test]
+    fn error_049() {
+        let tokens = lexer("1 + false;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "addの右辺に数値以外が出現しました。");
+            }
+        }
+    }
+
+    // 比較演算子にbooleanのパターン
+    #[test]
+    fn error_050() {
+        let tokens = lexer("10 <= true;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "less_equalの右辺に数値以外が出現しました。");
             }
         }
     }

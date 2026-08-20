@@ -1742,4 +1742,38 @@ mod tests {
             ]
         );
     }
+
+    // false && ゼロ除算
+    #[test]
+    fn normal_100() {
+        let tokens = lexer("false && (10 / 0 > 1);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // true || ゼロ除算
+    #[test]
+    fn normal_101() {
+        let tokens = lexer("true || (10 / 0 > 1);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
 }

@@ -129,6 +129,19 @@ impl Binary {
     }
 
     pub fn calc(&self, env: &Environment) -> anyhow::Result<Value> {
+        // &&, ||は短絡評価があるので処理を変える
+        match &self.op {
+            Op::And => {
+                return Binary::and(self, env);
+            },
+            Op::Or => {
+                return Binary::or(self, env);
+            },
+            _ => {
+            },
+        }
+
+        // &&, ||以外は通常通り左辺・右辺をそれぞれ処理する
         let lhs = eval(*self.lhs.clone(), env)?;
         let rhs = eval(*self.rhs.clone(), env)?;
 
@@ -163,11 +176,9 @@ impl Binary {
             Op::NotEqual => {
                 Binary::not_equal(lhs, rhs)
             },
-            Op::And => {
-                Binary::and(lhs, rhs)
-            },
-            Op::Or => {
-                Binary::or(lhs, rhs)
+            _ => {
+                let msg = format!("想定外のOpが出現しました。op = {:?}", &self.op);
+                Err(Error::msg(msg))
             },
         }
     }
@@ -336,36 +347,46 @@ impl Binary {
         Ok(Value::Boolean(lhs != rhs))
     }
 
-    fn and(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+    fn and(&self, env: &Environment) -> anyhow::Result<Value> {
+        let lhs = eval(*self.lhs.clone(), env)?;
         let lhs = if let Value::Boolean(b) = lhs {
             b
         } else {
             return Err(Error::msg("andの左辺にboolean以外が出現しました。"));
         };
+        if lhs {
+            let rhs = eval(*self.rhs.clone(), env)?;
+            let rhs = if let Value::Boolean(b) = rhs {
+                b
+            } else {
+                return Err(Error::msg("andの右辺にboolean以外が出現しました。"));
+            };
 
-        let rhs = if let Value::Boolean(b) = rhs {
-            b
-        } else {
-            return Err(Error::msg("andの右辺にboolean以外が出現しました。"));
-        };
+            return Ok(Value::Boolean(rhs));
+        }
 
-        Ok(Value::Boolean(lhs && rhs))
+        Ok(Value::Boolean(false))
     }
 
-    fn or(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+    fn or(&self, env: &Environment) -> anyhow::Result<Value> {
+        let lhs = eval(*self.lhs.clone(), env)?;
         let lhs = if let Value::Boolean(b) = lhs {
             b
         } else {
             return Err(Error::msg("orの左辺にboolean以外が出現しました。"));
         };
+        if lhs {
+            return Ok(Value::Boolean(true));
+        }
 
+        let rhs = eval(*self.rhs.clone(), env)?;
         let rhs = if let Value::Boolean(b) = rhs {
             b
         } else {
             return Err(Error::msg("orの右辺にboolean以外が出現しました。"));
         };
 
-        Ok(Value::Boolean(lhs || rhs))
+        Ok(Value::Boolean(rhs))
     }
 }
 

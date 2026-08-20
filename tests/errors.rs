@@ -905,4 +905,42 @@ mod tests {
             }
         }
     }
+
+    // true && ゼロ除算
+    #[test]
+    fn error_055() {
+        let tokens = lexer("true && (10 / 0 > 1);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let result = eval_all(expr);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "0で除算できません。");
+            }
+        }
+    }
+
+    // false || ゼロ除算
+    #[test]
+    fn error_056() {
+        let tokens = lexer("false || (10 / 0 > 1);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let result = eval_all(expr);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "0で除算できません。");
+            }
+        }
+    }
 }

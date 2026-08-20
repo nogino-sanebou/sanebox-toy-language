@@ -869,4 +869,40 @@ mod tests {
             }
         }
     }
+
+    // 論理演算子(&&)にbool以外を指定した場合
+    #[test]
+    fn error_053() {
+        let tokens = lexer("100 && true;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "andの左辺にboolean以外が出現しました。");
+            }
+        }
+    }
+
+    // 論理演算子(||)にbool以外を指定した場合
+    #[test]
+    fn error_054() {
+        let tokens = lexer("false || 100;");
+        let mut parser = Parser::new(tokens);
+        let stmt = parser.parse().unwrap();
+        let result = eval_all(stmt);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "orの右辺にboolean以外が出現しました。");
+            }
+        }
+    }
 }

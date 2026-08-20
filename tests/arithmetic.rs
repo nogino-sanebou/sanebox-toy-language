@@ -1599,4 +1599,147 @@ mod tests {
             ]
         );
     }
+
+    // true && true, true || falseのパターン
+    #[test]
+    fn normal_092() {
+        let tokens = lexer("true && true; true || false;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 数式 == 数式 && 数式 == 数式, 数式 == 数式 || 数式 == 数式のパターン
+    #[test]
+    fn normal_093() {
+        let tokens = lexer("10 == 10 && 20 == 30; 20 == 30 || 40 == 40;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 関数(論理演算子)のパターン
+    #[test]
+    fn normal_094() {
+        let tokens = lexer("print(true && true); print(false || true);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Unit,
+            ]
+        );
+    }
+
+    // bool && bool && boolのパターン
+    #[test]
+    fn normal_095() {
+        let tokens = lexer("true && true && true;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // bool || bool || boolのパターン
+    #[test]
+    fn normal_096() {
+        let tokens = lexer("true || false || false;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // bool && bool || boolのパターン
+    #[test]
+    fn normal_097() {
+        let tokens = lexer("true && true || false;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+
+    // (bool || bool) && (bool || bool)のパターン
+    #[test]
+    fn normal_098() {
+        let tokens = lexer("(true || false) && (false || false);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // 変数に論理演算子を設定した場合
+    #[test]
+    fn normal_099() {
+        let tokens = lexer("let x = true && true; x; let x = false || true; x;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(true),
+                Value::Unit,
+                Value::Boolean(true),
+            ]
+        );
+    }
 }

@@ -17,6 +17,10 @@ pub enum Token {
     Equal,
     Exclamation,
     ExclamationEqual,
+    Ampersand,
+    AmpersandAmpersand,
+    Pipe,
+    PipePipe,
 }
 
 pub fn lexer(code: &str) -> Vec<Token> {
@@ -89,7 +93,7 @@ pub fn lexer(code: &str) -> Vec<Token> {
                 else {
                     tokens.push(Token::Equal);
                 }
-            }
+            },
             '!' => {
                 push_literal(&mut  tokens, &mut token);
                 // 次の文字が'='であった場合、ExclamationEqualにする
@@ -101,7 +105,31 @@ pub fn lexer(code: &str) -> Vec<Token> {
                 else {
                     tokens.push(Token::Exclamation);
                 }
-            }
+            },
+            '&' => {
+                push_literal(&mut  tokens, &mut token);
+                // 次の文字も'&'であった場合、AmpersandAmpersandにする
+                if chars.peek() == Some(&'&') {
+                    tokens.push(Token::AmpersandAmpersand);
+                    chars.next();
+                }
+                // 違った場合はAmpersandにする
+                else {
+                    tokens.push(Token::Ampersand);
+                }
+            },
+            '|' => {
+                push_literal(&mut  tokens, &mut token);
+                // 次の文字も'|'であった場合、PipePipeにする
+                if chars.peek() == Some(&'|') {
+                    tokens.push(Token::PipePipe);
+                    chars.next();
+                }
+                // 違った場合はPipeにする
+                else {
+                    tokens.push(Token::Pipe);
+                }
+            },
             c if c.is_whitespace() => {
                 push_literal(&mut tokens, &mut token);
             },

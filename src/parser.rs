@@ -113,7 +113,61 @@ impl Parser {
 
     // 計算式の処理
     fn parse_expr(&mut self) -> anyhow::Result<Expr> {
-        self.expr_compare()
+        self.expr_or()
+    }
+
+    // 論理演算子(||)の処理
+    fn expr_or(&mut self) -> anyhow::Result<Expr> {
+        let mut left = self.expr_and()?;
+
+        while let Some(token) = self.peek() {
+            match token {
+                Token::PipePipe => {
+                    self.next();
+
+                    let right = self.expr_and()?;
+
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::Or
+                    );
+                    left = Expr::Binary(binary);
+                },
+                _ => {
+                    break;
+                },
+            }
+        }
+
+        Ok(left)
+    }
+
+    // 論理演算子(&&)の処理
+    fn expr_and(&mut self) -> anyhow::Result<Expr> {
+        let mut left = self.expr_compare()?;
+
+        while let Some(token) = self.peek() {
+            match token {
+                Token::AmpersandAmpersand => {
+                    self.next();
+
+                    let right = self.expr_compare()?;
+
+                    let binary = Binary::new(
+                        Box::new(left),
+                        Box::new(right),
+                        Op::And
+                    );
+                    left = Expr::Binary(binary);
+                },
+                _ => {
+                    break;
+                },
+            }
+        }
+
+        Ok(left)
     }
 
     // 比較・bool処理

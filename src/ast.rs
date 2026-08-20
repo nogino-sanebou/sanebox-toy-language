@@ -103,6 +103,8 @@ pub enum Op {
     GreaterEqual,
     Equal,
     NotEqual,
+    And,
+    Or,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -160,7 +162,13 @@ impl Binary {
             },
             Op::NotEqual => {
                 Binary::not_equal(lhs, rhs)
-            }
+            },
+            Op::And => {
+                Binary::and(lhs, rhs)
+            },
+            Op::Or => {
+                Binary::or(lhs, rhs)
+            },
         }
     }
 
@@ -326,6 +334,38 @@ impl Binary {
         };
 
         Ok(Value::Boolean(lhs != rhs))
+    }
+
+    fn and(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Boolean(b) = lhs {
+            b
+        } else {
+            return Err(Error::msg("andの左辺にboolean以外が出現しました。"));
+        };
+
+        let rhs = if let Value::Boolean(b) = rhs {
+            b
+        } else {
+            return Err(Error::msg("andの右辺にboolean以外が出現しました。"));
+        };
+
+        Ok(Value::Boolean(lhs && rhs))
+    }
+
+    fn or(lhs: Value, rhs: Value) -> anyhow::Result<Value> {
+        let lhs = if let Value::Boolean(b) = lhs {
+            b
+        } else {
+            return Err(Error::msg("orの左辺にboolean以外が出現しました。"));
+        };
+
+        let rhs = if let Value::Boolean(b) = rhs {
+            b
+        } else {
+            return Err(Error::msg("orの右辺にboolean以外が出現しました。"));
+        };
+
+        Ok(Value::Boolean(lhs || rhs))
     }
 }
 

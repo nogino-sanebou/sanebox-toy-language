@@ -426,7 +426,7 @@ impl Unary {
                         Ok(Value::Boolean(!b))
                     },
                     _ => {
-                        let msg = format!("UnaryOp::Notに数値以外が出現しました。name = {:?}", value);
+                        let msg = format!("UnaryOp::Notにboolean以外が出現しました。name = {:?}", value);
                         Err(Error::msg(msg))
                     },
                 }

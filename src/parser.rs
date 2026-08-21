@@ -347,17 +347,9 @@ impl Parser {
                     Ok(Expr::Unary(unary))
                 },
                 Token::Exclamation => {
-                    let expr = match self.next() {
-                        // ()で比較式が括られていた場合
-                        Some(Token::LParen) => {
-                            self.parse_expr()?
-                        },
-                        // booleanがべた書きであった場合
-                        _ => {
-                        self.expr_unary()?
-                        },
-                    };
-
+                    self.next();
+                    
+                    let expr = self.expr_unary()?;
                     let unary = Unary::new(Box::new(expr), UnaryOp::Not);
                     Ok(Expr::Unary(unary))
 

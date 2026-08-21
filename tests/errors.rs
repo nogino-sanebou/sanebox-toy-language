@@ -958,7 +958,7 @@ mod tests {
                 panic!("エラーになるべき入力が成功しました。");
             },
             Err(e) => {
-                assert_eq!(e.to_string(), "UnaryOp::Notに数値以外が出現しました。name = Number(20)");
+                assert_eq!(e.to_string(), "UnaryOp::Notにboolean以外が出現しました。name = Number(20)");
             }
         }
     }

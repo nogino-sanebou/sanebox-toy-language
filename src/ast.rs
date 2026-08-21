@@ -110,6 +110,7 @@ pub enum Op {
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum UnaryOp {
     Neg,
+    Not,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -414,7 +415,19 @@ impl Unary {
                         Ok(Value::Number(-num))
                     },
                     _ => {
-                        Err(Error::msg("数値以外が出現しました。 Unary.calc"))
+                        let msg = format!("UnaryOp::Negに数値以外が出現しました。name = {:?}", value);
+                        Err(Error::msg(msg))
+                    },
+                }
+            },
+            UnaryOp::Not => {
+                match value {
+                    Value::Boolean(b) => {
+                        Ok(Value::Boolean(!b))
+                    },
+                    _ => {
+                        let msg = format!("UnaryOp::Notに数値以外が出現しました。name = {:?}", value);
+                        Err(Error::msg(msg))
                     },
                 }
             }

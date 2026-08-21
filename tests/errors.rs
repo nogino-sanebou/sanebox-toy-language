@@ -943,4 +943,23 @@ mod tests {
             }
         }
     }
+
+    // 単項論理否定にboolean以外が出現するパターン
+    #[test]
+    fn error_057() {
+        let tokens = lexer("!(10 + 10);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let result = eval_all(expr);
+
+        match result {
+            Ok(_) => {
+                panic!("エラーになるべき入力が成功しました。");
+            },
+            Err(e) => {
+                assert_eq!(e.to_string(), "UnaryOp::Notに数値以外が出現しました。name = Number(20)");
+            }
+        }
+    }
 }

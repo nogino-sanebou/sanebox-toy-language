@@ -1776,4 +1776,77 @@ mod tests {
             ]
         );
     }
+
+    // 単項論理否定にbooleanべた書き
+    #[test]
+    fn normal_102() {
+        let tokens = lexer("!true; !false;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+                Value::Boolean(true),
+            ]
+        );
+    }
+
+    // 単項論理否定に(条件式)のパターン
+    #[test]
+    fn normal_103() {
+        let tokens = lexer("!(10 <= 20); let x = 30; let y = -20; !(x < 40 && abs(y) == 20);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+                Value::Unit,
+                Value::Unit,
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // 単項論理否定を変数に代入のパターン
+    #[test]
+    fn normal_104() {
+        let tokens = lexer("let x = !(10 <= 20); x;");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Unit,
+                Value::Boolean(false),
+            ]
+        );
+    }
+
+    // 単項論理否定を論理演算子に使うパターン
+    #[test]
+    fn normal_105() {
+        let tokens = lexer("!(10 > 20) && !(!true || true);");
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+
+        let r = eval_all(expr).unwrap();
+
+        assert_eq!(
+            r,
+            vec![
+                Value::Boolean(false),
+            ]
+        );
+    }
 }
